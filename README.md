@@ -27,7 +27,7 @@ To do
 
 ## Concept
 
-![Basic concept](C:\github-repository\ECC-PoW-project\img\Basic-concept.png)
+![Basic concept](C:\Users\HSKim\Documents\git-repo\ECC-PoW-project\img\Basic-concept.png)
 
 ## Decoder
 
@@ -56,7 +56,7 @@ $$
 
 Example : 1 bit error
 $$
-ep_1 = \underbrace{[1,0,0, ... ,0]}_{256},
+ep_1 = \underbrace{[1,0,0, ... ,0]}_{256},
 $$
 
 $$
@@ -113,5 +113,5 @@ $$
 
 3. Multiply $F_b$ and codeword. If result is 0 then this codeword is answer. If result is not 0, then change nonce and repeat this process.
 
-![2 bit ECC](C:\github-repository\ECC-PoW-project\img\2Bit-ECC-codeword.png)
+![2 bit ECC](C:\Users\HSKim\Documents\git-repo\ECC-PoW-project\img\2Bit-ECC-codeword.png)
 
