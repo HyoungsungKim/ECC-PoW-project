@@ -10,7 +10,7 @@ from uuid import uuid4
 import random
 import subprocess
 
-
+import os
 
 STOP_EVENT = Event()
 INTERRUPT_EVENT1 = Event()
@@ -259,6 +259,7 @@ class Blockchain:
         neighbours = self.nodes
         for node in neighbours:
             response = requests.get(f'http://{node}/get_updates')
+
     def mine(self):
         # We run the proof of work algorithm to get the next proof...
         last_block = self.last_block
@@ -374,9 +375,26 @@ class Blockchain:
         # guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:5] == "00000"
         
+#Write to json
+block_archive_path = 'block_archive.json'
+def toJson(dic_type):
+    archive = {
+        'archive': dic_type
+    }
+    with open(block_archive_path, 'w', encoding='utf-8') as json_file :
+        json.dump(archive, json_file, ensure_ascii=False, indent='\t')
 
-# Instantiate the Blockchain
+#If block archive exists, sync with archive
+def checkBlockArchive() :
+    if os.path.isfile(block_archive_path) :
+        with open(block_archive_path) as json_block_archive:
+            dic_block_archive = json.load(json_block_archive)
+        blockchain.chain = dic_block_archive['archive']
+
+# Initiate the Blockchain
 blockchain = Blockchain()
+checkBlockArchive()
+
 
 # Instantiate the Node
 app = Flask(__name__)
@@ -388,10 +406,13 @@ def mine():
     response = {
         'message': "New Block Forged",
         'index': block['index'],
-        'transactions': block['transactions'],
         'nonce': block['nonce'],
         'previous_hash': block['previous_hash'],
+        'timestamp': block['timestamp'],
+        'transactions': block['transactions'],     
+
     }
+    toJson(blockchain.chain)
     return jsonify(response), 200
 
 @app.route('/transactions/new', methods=['POST'])
