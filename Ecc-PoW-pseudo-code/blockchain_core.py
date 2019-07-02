@@ -101,16 +101,21 @@ class Blockchain:
         # Grab and verify the chains from all the nodes in our network
         for node in neighbours:
             response = requests.get(f'http://{node}/chain')
+            
 
             if response.status_code == 200:
                 length = response.json()['length']
                 chain = response.json()['chain']
 
+                print(length)
+                print(max_length)
                 # Check if the length is longer and the chain is valid
-                if length > max_length and self.valid_chain(chain):
+                #Validation is commented because validation is not implemented yet
+                if length > max_length :#  and self.valid_chain(chain):
                     max_length = length
                     new_chain = chain
                     best_node = node
+                    print("changed")
 
         # Replace our chain if we discovered a new, valid chain longer than ours
             if new_chain is not None:
@@ -119,8 +124,10 @@ class Blockchain:
                 response2 = requests.get(f'http://{best_node}/get_transactions')
                 self.current_transactions = response2.json()['transactions']
                 print("Chain replaced")
+                toJson(self.chain)
                 return True
 
+        toJson(self.chain)
         return False
 
     def new_block(self, mining_time, nonce, previous_hash):
@@ -431,16 +438,17 @@ def new_transaction():
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
-    # INTERRUPT_EVENT1.set()
+    INTERRUPT_EVENT1.set()
     response = {
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
     }
+    toJson(blockchain.chain)
     return jsonify(response), 200
 
 @app.route('/get_transactions', methods=['GET'])
 def full_transactions():
-    # INTERRUPT_EVENT2.set()
+    INTERRUPT_EVENT2.set()
     response = {
         'transactions': blockchain.current_transactions,
         'length': len(blockchain.current_transactions),
@@ -457,6 +465,7 @@ def awaiting_transactions():
 
 @app.route('/get_updates')
 def receiving_longest_chain_and_update_TX_list():
+    print(blockchain.nodes)
     INTERRUPT_EVENT1.set()
     return "ask received", 200
 
@@ -464,13 +473,17 @@ def receiving_longest_chain_and_update_TX_list():
 def register_nodes():
     values = request.get_json()
 
-    nodes = values.get('nodes')
+    #nodes = values.get('nodes')
+
+    #values = request.form
+    nodes = values.get('nodes').replace(" ", "").split(',')
+
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
-
+    print(nodes)
     for node in nodes:
         blockchain.register_node(node)
-
+    print(blockchain.nodes)
     response = {
         'message': 'New nodes have been added',
         'total_nodes': list(blockchain.nodes),

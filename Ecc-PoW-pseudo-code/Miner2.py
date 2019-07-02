@@ -26,7 +26,7 @@ class LoopThread(Thread):
         Thread.__init__(self)
 
     def run(self):
-        while len(blockchain.chain)< 20 and not self.stop_event.is_set():
+        while len(blockchain.chain)< 30 and not self.stop_event.is_set():
             self.loop_process()
             if self.interrupt_event1.is_set():
                 self.interrupted_process1()
@@ -76,4 +76,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
 
-    app.run(host='127.0.0.22', port=2000)
+    app.run(host='127.0.0.1', port = args.port)

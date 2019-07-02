@@ -26,7 +26,7 @@ class LoopThread(Thread):
         Thread.__init__(self)
 
     def run(self):
-        while len(blockchain.chain)< 20 and not self.stop_event.is_set():
+        while len(blockchain.chain)< 10 and not self.stop_event.is_set():
             self.loop_process()
             if self.interrupt_event1.is_set():
                 self.interrupted_process1()

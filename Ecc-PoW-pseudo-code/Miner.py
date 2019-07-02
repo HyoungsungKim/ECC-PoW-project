@@ -15,6 +15,7 @@ from blockchain_core import app
 from blockchain_core import INTERRUPT_EVENT1
 from blockchain_core import INTERRUPT_EVENT2
 from blockchain_core import STOP_EVENT
+from blockchain_core import toJson
 
 blockchain.mining_reward_address='Miner1'
 
@@ -26,15 +27,23 @@ class LoopThread(Thread):
         Thread.__init__(self)
 
     def run(self):
-        while len(blockchain.chain)< 2 and not self.stop_event.is_set():
+        while len(blockchain.chain)< 30 and not self.stop_event.is_set():
             self.loop_process()
-            if self.interrupt_event1.is_set():
-                self.interrupted_process1()
-                self.interrupt_event1.clear()
+
+            print(self.interrupt_event1.is_set())
+
+           # if self.interrupt_event1.is_set():
+            self.interrupted_process1()
+            self.interrupt_event1.clear()
+
+            ''' 
             if self.interrupt_event2.is_set():
                 self.interrupted_process2()
                 self.interrupt_event2.clear()
+            '''
+            toJson(blockchain.chain)
 
+            
     def loop_process(self):
         blockchain.mine()
         blockchain.announcement()
@@ -76,4 +85,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
 
-    app.run(host='127.0.0.1', port=2000)
+    app.run(host='127.0.0.1', port = args.port)
