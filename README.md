@@ -2,7 +2,7 @@
 
 [***LDPC-pseudo-code***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/LDPC-pseudo-code) : Pseudo code of ECCPoW using C++  
 [***Ecc-PoW-pseudo-code***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/LDPC-pseudo-code) : Implement pseudo blockchain using ECCPoW using python  
-[***ldpc***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/ldpc) : Porintg LDPC C++ to LDPC golang  
+[***ldpc***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/ldpc) : Porting LDPC C++ to LDPC golang  
 
 Writer HyoungSung Kim 
 
