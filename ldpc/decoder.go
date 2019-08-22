@@ -71,9 +71,12 @@ func Decoding() {
 	}
 }
 
-func GenerateSeed(phv [32]byte) int {
+func GenerateSeed(phv []byte) int {
+	if len(phv) > 32 {
+		phv = phv[:31]
+	}
 	sum := 0
-	for i := 0; i < 31; i++ {
+	for i := 0; i < len(phv); i++ {
 		sum += int(phv[i])
 		i++
 	}
@@ -85,6 +88,7 @@ func GenerateSeed(phv [32]byte) int {
 func GenerateH() bool {
 	var hSeed int64
 	hSeed = int64(seed)
+
 	var colOrder []int
 	/*
 		if H == nil {
@@ -108,6 +112,7 @@ func GenerateH() bool {
 		for j := 0; j < n; j++ {
 			colOrder = append(colOrder, j)
 		}
+
 		rand.Seed(hSeed)
 		rand.Shuffle(len(colOrder), func(i, j int) {
 			colOrder[i], colOrder[j] = colOrder[j], colOrder[i]
@@ -176,8 +181,8 @@ func GenerateHv(headerWithNonce []byte) {
 			decimal /= 2
 		}
 	}
-	// decoding에서 memset하는데 왜 copy 하지...
-	//copy(outputWord[:n], hashVector[:n])
+
+	outputWord = hashVector[:n]
 }
 
 func isRegular(nSize, wCol, wRow int) bool {
@@ -191,7 +196,7 @@ func isRegular(nSize, wCol, wRow int) bool {
 	return false
 }
 
-func setDifficulty(nSize, wCol, wRow int) bool {
+func SetDifficulty(nSize, wCol, wRow int) bool {
 	if isRegular(nSize, wCol, wRow) {
 		n = nSize
 		wc = wCol
@@ -202,10 +207,14 @@ func setDifficulty(nSize, wCol, wRow int) bool {
 	return false
 }
 
-func setDifficultyUsingLevel(level int) {
-	if level == 1 {
+func SetDifficultyUsingLevel(level int) {
+	if level == 0 {
+		n = 16
+		wc = 3
+		wr = 6
+	} else if level == 1 {
 		n = 32
-		wc = 64
+		wc = 3
 		wr = 6
 	} else if level == 2 {
 		n = 64
@@ -223,6 +232,7 @@ func Decision() bool {
 	for i := 0; i < m; i++ {
 		sum := 0
 		for j := 0; j < wr; j++ {
+			//	fmt.Printf("i : %d, j : %d, m : %d, wr : %d \n", i, j, m, wr)
 			sum = sum + outputWord[colInRow[j][i]]
 		}
 		if sum%2 == 1 {

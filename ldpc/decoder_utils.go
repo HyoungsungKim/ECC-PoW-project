@@ -3,6 +3,9 @@ package ldpc
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
 const (
@@ -11,8 +14,11 @@ const (
 )
 
 const (
-	printHashVector = 1
-	printOutputWord = 2
+	printRowInCol bool = false
+	printColInRow bool = true
+
+	printHashVector bool = false
+	printOutputWord bool = true
 )
 
 var n, m, wc, wr, seed int
@@ -68,42 +74,106 @@ func infinityTest(x float64) float64 {
 	}
 }
 
-func printWord(flag int) {
+func PrintWord(flag bool) {
 	var buffer []int
-	if flag == printHashVector {
+	switch flag {
+	case printHashVector:
 		buffer = hashVector
 		fmt.Println("hash vector")
-	} else if flag == printOutputWord {
+	case printOutputWord:
 		buffer = outputWord
 		fmt.Println("OutputWord")
-	} else {
+	default:
 		fmt.Println("Check flag again")
 	}
+
 	for _, i := range buffer {
 		fmt.Printf("%d", i)
 	}
-	fmt.Printf("\n\n")
+	fmt.Printf("\n")
 }
 
-func printH() {
+func PrintQ(flag bool) {
+	var buffer [][]int
+	switch flag {
+	case printRowInCol:
+		buffer = rowInCol
+		fmt.Println("row in col")
+	case printColInRow:
+		buffer = colInRow
+		fmt.Println("col in row")
+	default:
+		fmt.Println("Check flag again")
+		return
+	}
+
+	for _, i := range buffer {
+		for _, j := range i {
+			fmt.Printf("%d ", j)
+		}
+		fmt.Println()
+	}
+}
+
+func PrintH() {
 	fmt.Printf("The value of seed : %d\n", seed)
 	fmt.Printf("The size of H is %d x %d with ", m, n)
 	fmt.Printf("wc : %d and wr : %d \n", wc, wr)
 }
 
-func TestFunc() {
-	for i := 0; i < 2; i++ {
-		setDifficultyUsingLevel(3)
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
 
-		//GenerateSeed(i)
-		seed = i
-		GenerateH()
-		GenerateQ()
-		GenerateHv([]byte("cdexff12fff3ffff3f3ff3fff3f3f3feeeed"))
+func TestFunc() {
+	tickerCounter := 0
+	ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
+
+	var nonce int64
+	nonce = 0
+	SetDifficultyUsingLevel(0)
+
+	var previousHashValue = "0ffff123fff"
+	var currentBlockHeader = previousHashValue + time.Now().UTC().String()
+	var currentBlockHeaderWithNonce string
+
+	GenerateSeed([]byte(previousHashValue))
+	GenerateH()
+	GenerateQ()
+
+	PrintH()
+	//PrintQ(printRowInCol)
+	//PrintQ(printColInRow)
+
+	rand.Seed(time.Now().UnixNano())
+	fmt.Printf("Decoding")
+	for {
+		fmt.Printf("\rDecoding %s", ticker[tickerCounter])
+		tickerCounter++
+		tickerCounter %= len(ticker)
+
+		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatInt(nonce, 10)
+
+		GenerateHv([]byte(currentBlockHeaderWithNonce))
 
 		Decoding()
-		printWord(printHashVector)
-		printWord(printOutputWord)
-		Decision()
+		flag := Decision()
+
+		if !flag {
+			Decoding()
+			flag = Decision()
+		}
+		if flag {
+			fmt.Printf("\nCodeword is founded with nonce = %d\n", nonce)
+			break
+		}
+		nonce++
 	}
+
+	PrintWord(printHashVector)
+	PrintWord(printOutputWord)
+	fmt.Printf("\n")
 }
