@@ -3,7 +3,6 @@ package ldpc
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"strconv"
 	"time"
 )
@@ -11,6 +10,7 @@ import (
 const (
 	BigInfinity = 1000000.0
 	Inf         = 64.0
+	MaxNonce    = 1<<32 - 1
 )
 
 const (
@@ -22,25 +22,18 @@ const (
 )
 
 var n, m, wc, wr, seed int
+var LDPCNonce uint32
 
 var hashVector []int
 var outputWord []int
 
-//hashVector := make([]int, m)
-//outputWord := make([]int, n)
-
-var tmpHashVector [32]byte //32bytes => 256 bytes
+var tmpHashVector [32]byte //32bytes => 256 bits
 
 var H [][]int
 var rowInCol [][]int
 var colInRow [][]int
 
-//H 			:= make([][]int)
-//rowInCol 	:= make([][]int)
-//colInRow  	:= make([][]int)
-
 // These parameters are only used for the decoding function.
-
 var maxIter = 20    // The maximum number of iteration in the decoder
 var crossErr = 0.01 // A transisient error probability. This is also fixed as a small value
 
@@ -48,11 +41,6 @@ var LRft []float64
 var LRpt []float64
 var LRrtl [][]float64
 var LRqtl [][]float64
-
-//LRft := make([]float64)
-//LRpt := make([]float64)
-//LRrtl := make([][]float64)
-//LRqtl := male([][]float64)
 
 func funcF(x float64) float64 {
 	if x >= BigInfinity {
@@ -121,26 +109,21 @@ func PrintH() {
 	fmt.Printf("wc : %d and wr : %d \n", wc, wr)
 }
 
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 func TestFunc() {
 	tickerCounter := 0
 	ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
+	tempPrevHash := "00000000000000000000000000000000"
 
-	var nonce int64
-	nonce = 0
-	SetDifficultyUsingLevel(0)
+	SetDifficultyUsingLevel(1)
+	LDPCNonce = 0
 
-	var previousHashValue = "0ffff123fff"
-	var currentBlockHeader = previousHashValue + time.Now().UTC().String()
+	header := ethHeader{}
+	copy(header.ParentHash[:], tempPrevHash)
+	header.Time = uint64(time.Now().Unix())
+	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 	var currentBlockHeaderWithNonce string
 
-	GenerateSeed([]byte(previousHashValue))
+	GenerateSeed(header.ParentHash)
 	GenerateH()
 	GenerateQ()
 
@@ -148,17 +131,20 @@ func TestFunc() {
 	//PrintQ(printRowInCol)
 	//PrintQ(printColInRow)
 
-	rand.Seed(time.Now().UnixNano())
-	fmt.Printf("Decoding")
 	for {
 		fmt.Printf("\rDecoding %s", ticker[tickerCounter])
 		tickerCounter++
 		tickerCounter %= len(ticker)
 
-		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatInt(nonce, 10)
+		//If Nonce is bigger than MaxNonce, then update timestamp
+		if LDPCNonce >= MaxNonce {
+			LDPCNonce = 0
+			header.Time = uint64(time.Now().Unix())
+			currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
+		}
+		currentBlockHeaderWithNonce = currentBlockHeader + fmt.Sprint(LDPCNonce)
 
 		GenerateHv([]byte(currentBlockHeaderWithNonce))
-
 		Decoding()
 		flag := Decision()
 
@@ -167,11 +153,18 @@ func TestFunc() {
 			flag = Decision()
 		}
 		if flag {
-			fmt.Printf("\nCodeword is founded with nonce = %d\n", nonce)
+			fmt.Printf("\nCodeword is founded with nonce = %d\n", LDPCNonce)
 			break
 		}
-		nonce++
+		LDPCNonce++
 	}
+
+	/*
+		fmt.Printf("LRft : \n %v\n", LRft)
+		fmt.Printf("LRpt : \n %v\n", LRpt)
+		fmt.Printf("LRrtl : \n %v\n", LRrtl)
+		fmt.Printf("LRft : \n %v\n", LRqtl)
+	*/
 
 	PrintWord(printHashVector)
 	PrintWord(printOutputWord)

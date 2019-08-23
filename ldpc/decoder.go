@@ -2,9 +2,50 @@ package ldpc
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
+	"time"
 )
+
+//runLDPC function needs more concrete implementation
+func runLDPC(header ethHeader) {
+	//Need to set difficulty before running LDPC
+	LDPCNonce = 0
+
+	header.Time = uint64(time.Now().Unix())
+	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
+	var currentBlockHeaderWithNonce string
+
+	GenerateSeed(header.ParentHash)
+	GenerateH()
+	GenerateQ()
+
+	for {
+		//If Nonce is bigger than MaxNonce, then update timestamp
+		if LDPCNonce >= MaxNonce {
+			LDPCNonce = 0
+			header.Time = uint64(time.Now().Unix())
+			currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
+		}
+		currentBlockHeaderWithNonce = currentBlockHeader + fmt.Sprint(LDPCNonce)
+
+		GenerateHv([]byte(currentBlockHeaderWithNonce))
+		Decoding()
+		flag := Decision()
+
+		if !flag {
+			Decoding()
+			flag = Decision()
+		}
+		if flag {
+			fmt.Printf("\nCodeword is founded with nonce = %d\n", LDPCNonce)
+			break
+		}
+		LDPCNonce++
+	}
+}
 
 func Decoding() {
 	var temp3, tempSign, sign, magnitude float64
@@ -71,14 +112,10 @@ func Decoding() {
 	}
 }
 
-func GenerateSeed(phv []byte) int {
-	if len(phv) > 32 {
-		phv = phv[:31]
-	}
+func GenerateSeed(phv [32]byte) int {
 	sum := 0
 	for i := 0; i < len(phv); i++ {
 		sum += int(phv[i])
-		i++
 	}
 	seed = sum
 	return sum
@@ -207,6 +244,7 @@ func SetDifficulty(nSize, wCol, wRow int) bool {
 	return false
 }
 
+//SetDifficultyUsingLevel 0 : Very easy, 1 : Easy, 2 : Medium, 3 : hard
 func SetDifficultyUsingLevel(level int) {
 	if level == 0 {
 		n = 16
