@@ -103,6 +103,7 @@ func TestFunc() {
 	var LDPCNonce uint32
 	var hashVector []int
 	var outputWord []int
+	//var LRrtl [][]float64
 
 	tempPrevHash := "00000000000000000000000000000123"
 
@@ -112,7 +113,7 @@ func TestFunc() {
 	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 	var currentBlockHeaderWithNonce string
 
-	parameters := SetDifficultyUsingLevel(1)
+	parameters := SetDifficultyUsingLevel(0)
 	parameters.seed = GenerateSeed(header.ParentHash)
 
 	H := GenerateH(parameters)
@@ -136,11 +137,11 @@ func TestFunc() {
 		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
 
 		hashVector = GenerateHv(parameters, []byte(currentBlockHeaderWithNonce))
-		hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+		hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 		flag := MakeDecision(parameters, colInRow, outputWord)
 
 		if !flag {
-			hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+			hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 			flag = MakeDecision(parameters, colInRow, outputWord)
 		}
 		if flag {
@@ -165,11 +166,13 @@ func TestFunc() {
 //TestRunLDPC test runLDPC function
 func TestRunLDPC() {
 	parameters := SetDifficultyUsingLevel(0)
-	tempParentHash := "00000000000000000000000000000123"
+	var tempParentHash [32]byte
+	//tempParentHash = [0, 0, ..., 0]
+	parameters.seed = GenerateSeed(tempParentHash)
 
 	tempHeader := ethHeader{}
-	copy(tempHeader.ParentHash[:], tempParentHash)
+	tempHeader.ParentHash = tempParentHash
 	tempHeader.Time = uint64(time.Now().Unix())
 
-	runLDPC(parameters, tempHeader)
+	RunLDPC(parameters, tempHeader)
 }

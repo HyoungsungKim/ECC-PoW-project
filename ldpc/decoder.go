@@ -11,11 +11,12 @@ import (
 
 //runLDPC function needs more concrete implementation
 //runLDPC function is implemented for general purpose
-func runLDPC(parameters Parameters, header ethHeader) {
+func RunLDPC(parameters Parameters, header ethHeader) {
 	//Need to set difficulty before running LDPC
 	var LDPCNonce uint32
 	var hashVector []int
 	var outputWord []int
+	//	var LRrtl [][]float64
 
 	header.Time = uint64(time.Now().Unix())
 	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
@@ -34,11 +35,11 @@ func runLDPC(parameters Parameters, header ethHeader) {
 		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
 
 		hashVector = GenerateHv(parameters, []byte(currentBlockHeaderWithNonce))
-		hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+		hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 		flag := MakeDecision(parameters, colInRow, outputWord)
 
 		if !flag {
-			hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+			hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 			flag = MakeDecision(parameters, colInRow, outputWord)
 		}
 		if flag {
@@ -93,7 +94,7 @@ func GenerateSeed(phv [32]byte) int {
 func Decoding(parameters Parameters,
 	hashVector []int,
 	H, rowInCol, colInRow [][]int,
-) ([]int, []int) {
+) ([]int, []int, [][]float64) {
 	var temp3, tempSign, sign, magnitude float64
 
 	outputWord := make([]int, parameters.n)
@@ -157,7 +158,7 @@ func Decoding(parameters Parameters,
 		}
 	}
 
-	return hashVector, outputWord
+	return hashVector, outputWord, LRrtl
 }
 
 //GenerateH generate H matrix using parameters

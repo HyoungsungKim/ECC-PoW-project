@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	//ldpc.TestFunc()
-	ldpc.TestRunLDPC()
+	ldpc.TestFunc()
+	//	ldpc.TestRunLDPC()
 }
