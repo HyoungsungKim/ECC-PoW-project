@@ -11,9 +11,11 @@ const (
 	BigInfinity = 1000000.0
 	Inf         = 64.0
 	MaxNonce    = 1<<32 - 1
-)
 
-const (
+	// These parameters are only used for the decoding function.
+	maxIter  = 20   // The maximum number of iteration in the decoder
+	crossErr = 0.01 // A transisient error probability. This is also fixed as a small value
+
 	printRowInCol bool = false
 	printColInRow bool = true
 
@@ -21,26 +23,13 @@ const (
 	printOutputWord bool = true
 )
 
-var n, m, wc, wr, seed int
-var LDPCNonce uint32
-
-var hashVector []int
-var outputWord []int
-
-var tmpHashVector [32]byte //32bytes => 256 bits
-
-var H [][]int
-var rowInCol [][]int
-var colInRow [][]int
-
-// These parameters are only used for the decoding function.
-var maxIter = 20    // The maximum number of iteration in the decoder
-var crossErr = 0.01 // A transisient error probability. This is also fixed as a small value
-
-var LRft []float64
-var LRpt []float64
-var LRrtl [][]float64
-var LRqtl [][]float64
+type Parameters struct {
+	n    int
+	m    int
+	wc   int
+	wr   int
+	seed int
+}
 
 func funcF(x float64) float64 {
 	if x >= BigInfinity {
@@ -62,40 +51,36 @@ func infinityTest(x float64) float64 {
 	}
 }
 
-func PrintWord(flag bool) {
-	var buffer []int
+//PrintWord print Hash vector or Outputword using flag
+func PrintWord(src []int, flag bool) {
 	switch flag {
 	case printHashVector:
-		buffer = hashVector
 		fmt.Println("hash vector")
 	case printOutputWord:
-		buffer = outputWord
 		fmt.Println("OutputWord")
 	default:
 		fmt.Println("Check flag again")
 	}
 
-	for _, i := range buffer {
+	for _, i := range src {
 		fmt.Printf("%d", i)
 	}
 	fmt.Printf("\n")
 }
 
-func PrintQ(flag bool) {
-	var buffer [][]int
+//PrintQ print RowInCol or ColInRow using flag
+func PrintQ(src [][]int, flag bool) {
 	switch flag {
 	case printRowInCol:
-		buffer = rowInCol
 		fmt.Println("row in col")
 	case printColInRow:
-		buffer = colInRow
 		fmt.Println("col in row")
 	default:
 		fmt.Println("Check flag again")
 		return
 	}
 
-	for _, i := range buffer {
+	for _, i := range src {
 		for _, j := range i {
 			fmt.Printf("%d ", j)
 		}
@@ -103,19 +88,23 @@ func PrintQ(flag bool) {
 	}
 }
 
-func PrintH() {
-	fmt.Printf("The value of seed : %d\n", seed)
-	fmt.Printf("The size of H is %d x %d with ", m, n)
-	fmt.Printf("wc : %d and wr : %d \n", wc, wr)
+//PrintH print parameter of matrix and seed
+func PrintH(parameters Parameters) {
+	fmt.Printf("The value of seed : %d\n", parameters.seed)
+	fmt.Printf("The size of H is %d x %d with ", parameters.m, parameters.n)
+	fmt.Printf("wc : %d and wr : %d \n", parameters.wc, parameters.wr)
 }
 
+//TestFunc test decoder.go functions
 func TestFunc() {
 	tickerCounter := 0
 	ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
-	tempPrevHash := "00000000000000000000000000000123"
 
-	SetDifficultyUsingLevel(0)
-	LDPCNonce = 0
+	var LDPCNonce uint32
+	var hashVector []int
+	var outputWord []int
+
+	tempPrevHash := "00000000000000000000000000000123"
 
 	header := ethHeader{}
 	copy(header.ParentHash[:], tempPrevHash)
@@ -123,11 +112,13 @@ func TestFunc() {
 	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 	var currentBlockHeaderWithNonce string
 
-	GenerateSeed(header.ParentHash)
-	GenerateH()
-	GenerateQ()
+	parameters := SetDifficultyUsingLevel(1)
+	parameters.seed = GenerateSeed(header.ParentHash)
 
-	PrintH()
+	H := GenerateH(parameters)
+	colInRow, rowInCol := GenerateQ(parameters, H)
+
+	PrintH(parameters)
 	//PrintQ(printRowInCol)
 	//PrintQ(printColInRow)
 
@@ -142,15 +133,15 @@ func TestFunc() {
 			header.Time = uint64(time.Now().Unix())
 			currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 		}
-		currentBlockHeaderWithNonce = currentBlockHeader + fmt.Sprint(LDPCNonce)
+		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
 
-		GenerateHv([]byte(currentBlockHeaderWithNonce))
-		Decoding()
-		flag := Decision()
+		hashVector = GenerateHv(parameters, []byte(currentBlockHeaderWithNonce))
+		hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+		flag := MakeDecision(parameters, colInRow, outputWord)
 
 		if !flag {
-			Decoding()
-			flag = Decision()
+			hashVector, outputWord = Decoding(parameters, hashVector, H, rowInCol, colInRow)
+			flag = MakeDecision(parameters, colInRow, outputWord)
 		}
 		if flag {
 			fmt.Printf("\nCodeword is founded with nonce = %d\n", LDPCNonce)
@@ -166,18 +157,19 @@ func TestFunc() {
 		fmt.Printf("LRft : \n %v\n", LRqtl)
 	*/
 
-	PrintWord(printHashVector)
-	PrintWord(printOutputWord)
+	PrintWord(hashVector, printHashVector)
+	PrintWord(outputWord, printOutputWord)
 	fmt.Printf("\n")
 }
 
+//TestRunLDPC test runLDPC function
 func TestRunLDPC() {
-	SetDifficultyUsingLevel(0)
+	parameters := SetDifficultyUsingLevel(0)
 	tempParentHash := "00000000000000000000000000000123"
 
 	tempHeader := ethHeader{}
 	copy(tempHeader.ParentHash[:], tempParentHash)
 	tempHeader.Time = uint64(time.Now().Unix())
 
-	runLDPC(tempHeader)
+	runLDPC(parameters, tempHeader)
 }
