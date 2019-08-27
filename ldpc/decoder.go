@@ -56,8 +56,8 @@ func Decoding() {
 	LRft = make([]float64, n)
 
 	for i := 0; i < n; i++ {
-		LRqtl[i] = make([]float64, n)
-		LRrtl[i] = make([]float64, n)
+		LRqtl[i] = make([]float64, m)
+		LRrtl[i] = make([]float64, m)
 		LRft[i] = math.Log((1-crossErr)/crossErr) * float64((hashVector[i]*2 - 1))
 	}
 	LRpt = make([]float64, n)
@@ -249,19 +249,19 @@ func SetDifficultyUsingLevel(level int) {
 	if level == 0 {
 		n = 16
 		wc = 3
-		wr = 6
+		wr = 4
 	} else if level == 1 {
 		n = 32
 		wc = 3
-		wr = 6
+		wr = 4
 	} else if level == 2 {
 		n = 64
 		wc = 3
-		wr = 6
+		wr = 4
 	} else if level == 3 {
 		n = 128
 		wc = 3
-		wr = 6
+		wr = 4
 	}
 	m = int(n * wc / wr)
 }

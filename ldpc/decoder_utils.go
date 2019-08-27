@@ -112,9 +112,9 @@ func PrintH() {
 func TestFunc() {
 	tickerCounter := 0
 	ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
-	tempPrevHash := "00000000000000000000000000000000"
+	tempPrevHash := "00000000000000000000000000000123"
 
-	SetDifficultyUsingLevel(1)
+	SetDifficultyUsingLevel(0)
 	LDPCNonce = 0
 
 	header := ethHeader{}
@@ -169,4 +169,15 @@ func TestFunc() {
 	PrintWord(printHashVector)
 	PrintWord(printOutputWord)
 	fmt.Printf("\n")
+}
+
+func TestRunLDPC() {
+	SetDifficultyUsingLevel(0)
+	tempParentHash := "00000000000000000000000000000123"
+
+	tempHeader := ethHeader{}
+	copy(tempHeader.ParentHash[:], tempParentHash)
+	tempHeader.Time = uint64(time.Now().Unix())
+
+	runLDPC(tempHeader)
 }
