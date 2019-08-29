@@ -3,8 +3,6 @@ package ldpc
 import (
 	"fmt"
 	"math"
-	"strconv"
-	"time"
 )
 
 const (
@@ -93,86 +91,4 @@ func PrintH(parameters Parameters) {
 	fmt.Printf("The value of seed : %d\n", parameters.seed)
 	fmt.Printf("The size of H is %d x %d with ", parameters.m, parameters.n)
 	fmt.Printf("wc : %d and wr : %d \n", parameters.wc, parameters.wr)
-}
-
-//TestFunc test decoder.go functions
-func TestFunc() {
-	tickerCounter := 0
-	ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
-
-	var LDPCNonce uint32
-	var hashVector []int
-	var outputWord []int
-	//var LRrtl [][]float64
-
-	tempPrevHash := "00000000000000000000000000000123"
-
-	header := ethHeader{}
-	copy(header.ParentHash[:], tempPrevHash)
-	header.Time = uint64(time.Now().Unix())
-	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-	var currentBlockHeaderWithNonce string
-
-	parameters := SetDifficultyUsingLevel(0)
-	parameters.seed = GenerateSeed(header.ParentHash)
-
-	H := GenerateH(parameters)
-	colInRow, rowInCol := GenerateQ(parameters, H)
-
-	PrintH(parameters)
-	//PrintQ(printRowInCol)
-	//PrintQ(printColInRow)
-
-	for {
-		fmt.Printf("\rDecoding %s", ticker[tickerCounter])
-		tickerCounter++
-		tickerCounter %= len(ticker)
-
-		//If Nonce is bigger than MaxNonce, then update timestamp
-		if LDPCNonce >= MaxNonce {
-			LDPCNonce = 0
-			header.Time = uint64(time.Now().Unix())
-			currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-		}
-		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
-
-		hashVector = GenerateHv(parameters, []byte(currentBlockHeaderWithNonce))
-		hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
-		flag := MakeDecision(parameters, colInRow, outputWord)
-
-		if !flag {
-			hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
-			flag = MakeDecision(parameters, colInRow, outputWord)
-		}
-		if flag {
-			fmt.Printf("\nCodeword is founded with nonce = %d\n", LDPCNonce)
-			break
-		}
-		LDPCNonce++
-	}
-
-	/*
-		fmt.Printf("LRft : \n %v\n", LRft)
-		fmt.Printf("LRpt : \n %v\n", LRpt)
-		fmt.Printf("LRrtl : \n %v\n", LRrtl)
-		fmt.Printf("LRft : \n %v\n", LRqtl)
-	*/
-
-	PrintWord(hashVector, printHashVector)
-	PrintWord(outputWord, printOutputWord)
-	fmt.Printf("\n")
-}
-
-//TestRunLDPC test runLDPC function
-func TestRunLDPC() {
-	parameters := SetDifficultyUsingLevel(0)
-	var tempParentHash [32]byte
-	//tempParentHash = [0, 0, ..., 0]
-	parameters.seed = GenerateSeed(tempParentHash)
-
-	tempHeader := ethHeader{}
-	tempHeader.ParentHash = tempParentHash
-	tempHeader.Time = uint64(time.Now().Unix())
-
-	RunLDPC(parameters, tempHeader)
 }
