@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "LDPC.h"
 #include "Memory_Manage.h"
 #include "sha256.h"

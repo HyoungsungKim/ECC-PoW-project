@@ -1,26 +1,13 @@
-﻿// ECCPOW-LDPC.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
-//
-
-
-#include "stdafx.h"
-#include "LDPC.h"
+﻿#include "LDPC.h"
 #include <string>
 #include <iostream>
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	//argv[0] : test.exe
-	//argv[1] : previous block hash		-> 32 hexa-digits
-	//argv[2] : current block header	-> 32 hexa-digits
-
-	//phv : previous block hash
-	//current_block_header : current block header
 	string phv;
 	string current_block_header_hash;
 	if (argc == 1) {
-		//const for test
-		//원래 27개 였음
 		phv = "00000000000000000000000000000000";
 		current_block_header_hash = "00000000000000000000000000000000";
 	}
