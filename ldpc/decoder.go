@@ -5,23 +5,23 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"time"
 )
 
-//runLDPC function needs more concrete implementation
-//runLDPC function is implemented for general purpose
-func RunLDPC(parameters Parameters, header ethHeader) {
+//RunLDPC function needs more concrete implementation
+//return hashVector, outputWord, LDPCNonce
+func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
 	//Need to set difficulty before running LDPC
 	var LDPCNonce uint32
 	var hashVector []int
 	var outputWord []int
 	//	var LRrtl [][]float64
 
-	header.Time = uint64(time.Now().Unix())
-	var currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-	var currentBlockHeaderWithNonce string
-
+	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
+	var serializedHeaderWithNonce string
+	var encryptedHeaderWithNonce [32]byte
 	H := GenerateH(parameters)
 	colInRow, rowInCol := GenerateQ(parameters, H)
 
@@ -30,24 +30,26 @@ func RunLDPC(parameters Parameters, header ethHeader) {
 		if LDPCNonce >= MaxNonce {
 			LDPCNonce = 0
 			header.Time = uint64(time.Now().Unix())
-			currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
+			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 		}
-		currentBlockHeaderWithNonce = currentBlockHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
 
-		hashVector = GenerateHv(parameters, []byte(currentBlockHeaderWithNonce))
+		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
 		hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 		flag := MakeDecision(parameters, colInRow, outputWord)
 
 		if !flag {
 			hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 			flag = MakeDecision(parameters, colInRow, outputWord)
-		}
-		if flag {
+		} else {
 			fmt.Printf("Codeword is founded with nonce = %d\n", LDPCNonce)
 			break
 		}
 		LDPCNonce++
 	}
+
+	return hashVector, outputWord, LDPCNonce
 }
 
 //SetDifficultyUsingLevel set matrix parameters
@@ -90,7 +92,29 @@ func GenerateSeed(phv [32]byte) int {
 	return sum
 }
 
-//Decoding carry out LDPC decoding. It returns hashVector and outputWord
+//VerifyDecoding return bool, hashVector of verification, outputWord of verification
+func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, header ethHeader) (bool, []int, []int) {
+	//VerifyDecoding function needs more concrete implementation
+	//It has to be decided
+	//It is right to generate H, colInRow, rowInCol or pass these using other ways
+	H := GenerateH(parameters)
+	colInRow, rowInCol := GenerateQ(parameters, H)
+	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
+	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+	encryptedHeaderWithNonce := sha256.Sum256([]byte(serializedHeaderWithNonce))
+
+	hashVector := GenerateHv(parameters, encryptedHeaderWithNonce)
+	hashVectorOfVerification, outputWordOfVerification, _ := Decoding(parameters, hashVector, H, rowInCol, colInRow)
+
+	if reflect.DeepEqual(outputWord, outputWordOfVerification) && reflect.DeepEqual(hashVector, hashVectorOfVerification) {
+		return true, hashVectorOfVerification, outputWordOfVerification
+	}
+
+	return false, hashVectorOfVerification, outputWordOfVerification
+}
+
+//Decoding carry out LDPC decoding.
+//It return hashvector, outputWord, LRrtl
 func Decoding(parameters Parameters,
 	hashVector []int,
 	H, rowInCol, colInRow [][]int,
@@ -239,26 +263,24 @@ func GenerateQ(parameters Parameters, H [][]int) ([][]int, [][]int) {
 
 //GenerateHv generate hashvector
 //It needs to compare with origin C++ implementation Especially when sha256 function is used
-func GenerateHv(parameters Parameters, headerWithNonce []byte) []int {
+func GenerateHv(parameters Parameters, encryptedHeaderWithNonce [32]byte) []int {
 	//inputSize := len(headerWithNonce)
-	var tmpHashVector [32]byte //32bytes => 256 bits
 	hashVector := make([]int, parameters.n)
 
-	if parameters.n <= 256 {
-		tmpHashVector = sha256.Sum256(headerWithNonce)
-	} else {
-		/*
-			This section is for a case in which the size of a hash vector is larger than 256.
-			This section will be implemented soon.
-		*/
-	}
-
 	/*
-		transform the constructed hexadecimal array into an binary array
-		ex) FE01 => 11111110000 0001
+		if parameters.n <= 256 {
+			tmpHashVector = sha256.Sum256(headerWithNonce)
+		} else {
+			/*
+				This section is for a case in which the size of a hash vector is larger than 256.
+				This section will be implemented soon.
+		}
+			transform the constructed hexadecimal array into an binary array
+			ex) FE01 => 11111110000 0001
 	*/
+
 	for i := 0; i < parameters.n/8; i++ {
-		decimal := int(tmpHashVector[i])
+		decimal := int(encryptedHeaderWithNonce[i])
 		for j := 7; j >= 0; j-- {
 			hashVector[j+8*(i)] = decimal % 2
 			decimal /= 2
