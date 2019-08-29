@@ -12,3 +12,28 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 
 # LDPC decoder porting to go version report
 
+2019.08.22
+
+- Finish porting to go
+
+2019.08.28 
+
+- Index errors are happened when LDPC is tested in go-ethereum using go routine
+  - Remove global variables
+  - Because of global variables, Critical section is violated
+- Remove useless return
+- Add comments to each function
+
+2019.08.29
+
+- Add `decoder_test.go`
+  - Calculate elapse time of decoding
+  - Test LDPC Process
+  - Test `RunLDPC()` function
+  - Test LDPC verification
+- Implement the function for verifying LDPC decoder
+  - Correct return of few function to pass information to decoder verification function
+- `GenerateHV()` function is corrected
+  - Before correcting, serialized string was passed
+  - But now, encrypted(sha256) string is passed 
+
