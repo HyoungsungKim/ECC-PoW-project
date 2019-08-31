@@ -5,7 +5,76 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	_ "github.com/ethereum/go-ethereum/rlp"
 )
+
+//https://github.com/ethereum/go-ethereum/blob/master/rlp/decode_test.go#L313
+//Read and implement encoding and decoding test again
+
+/*
+type extraNonce struct {
+	difficulty int
+	outputWord string
+	LDPCNonce  uint32
+}
+
+//EncodeRLP implementation from https://godoc.org/github.com/ethereum/go-ethereum/rlp#example-Encoder
+func (en *extraNonce) EncodeRLP(w io.Writer) (err error) {
+	if en == nil {
+		err = rlp.Encode(w, extraNonce{0, "0", 0})
+	} else {
+		err = rlp.Encode(w, extraNonce{en.difficulty, en.outputWord, en.LDPCNonce})
+	}
+	return err
+}
+
+func (en *extraNonce) DecodeRLP(r io.Reader) (err error) {
+	if en == nil {
+		err = rlp.Decode(r, extraNonce{0, "0", 0})
+	} else {
+		err = rlp.Decode(r, extraNonce{en.difficulty, en.outputWord, en.LDPCNonce})
+	}
+	return err
+}
+
+func TestRLPEncoding(t *testing.T) {
+	var en *extraNonce
+	encodingResult, _ := rlp.EncodeToBytes(en)
+	t.Logf("%v -> %X\n", en, encodingResult)
+
+	en = &extraNonce{0, "123456789", 0}
+	encodingResult, _ = rlp.EncodeToBytes(en)
+	t.Logf("%v -> %X\n", en, encodingResult)
+}
+
+func TestRLPDecoding(t *testing.T) {
+	var result *extraNonce
+	en := &extraNonce{
+		difficulty: 0,
+		outputWord: "123456789",
+		LDPCNonce:  0,
+	}
+	encodingResult, _ := rlp.EncodeToBytes(en)
+	t.Logf("Encoding Result : %v -> %X\n", en, encodingResult)
+
+	err := rlp.Decode(bytes.NewReader(encodingResult), &result)
+	if err != nil {
+		t.Errorf("Error : %v\n", err)
+	}
+
+	if en == result {
+		t.Logf("Before encoding : %v\n", en)
+		t.Logf("Encoding Result : %X\n", encodingResult)
+		t.Logf("After decoding : %v\n", result)
+	} else {
+		t.Errorf("Before encoding : %v\n", en)
+		t.Errorf("Encoding Result : %X\n", encodingResult)
+		t.Errorf("After decoding : %v\n", result)
+	}
+
+}
+*/
 
 func TestDecodingElapseTime(t *testing.T) {
 	header := ethHeader{}
