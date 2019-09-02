@@ -113,6 +113,83 @@ func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, h
 	return false, hashVectorOfVerification, outputWordOfVerification
 }
 
+//OptimizedDecoding is implemented decoding function is too slow
+//It is slower than unoptimized;;;
+func OptimizedDecoding(parameters Parameters,
+	hashVector []int,
+	H, rowInCol, colInRow [][]int,
+) ([]int, []int, [][]float64) {
+	var temp3, tempSign, sign, magnitude float64
+
+	outputWord := make([]int, parameters.n)
+	LRqtl := make([][]float64, parameters.n)
+	LRrtl := make([][]float64, parameters.n)
+	LRft := make([]float64, parameters.n)
+
+	for i := 0; i < parameters.n; i++ {
+		LRqtl[i] = make([]float64, parameters.m)
+		LRrtl[i] = make([]float64, parameters.m)
+		LRft[i] = math.Log((1-crossErr)/crossErr) * float64((hashVector[i]*2 - 1))
+	}
+	LRpt := make([]float64, parameters.n)
+
+	var i, k, l, m, ind, t int
+	for ind = 1; ind <= maxIter; ind++ {
+		for t = 0; t < parameters.n; t++ {
+			LRpt[t] = infinityTest(LRft[t])
+
+			for m = 0; m < parameters.wc; m++ {
+				temp3 = 0
+				if m < parameters.wc-1 {
+					temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[parameters.wc-1][t]])
+				}
+				if m == parameters.wc-1 {
+					temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[parameters.wc-2][t]])
+				}
+				LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp3)
+
+				for l = 0; l < parameters.wr; l++ {
+					temp3 = 0.0
+					sign = 1
+					if l < parameters.wr-1 {
+						temp3 = temp3 + funcF(math.Abs(LRqtl[colInRow[parameters.wr-1][k]][k]))
+						if LRqtl[colInRow[l][k]][k] > 0.0 {
+							tempSign = 1.0
+						} else {
+							tempSign = -1.0
+						}
+						sign = sign * tempSign
+					}
+
+					if l == parameters.wr-1 {
+						temp3 = temp3 + funcF(math.Abs(LRqtl[colInRow[parameters.wr-2][k]][k]))
+						if LRqtl[colInRow[l][k]][k] > 0.0 {
+							tempSign = 1.0
+						} else {
+							tempSign = -1.0
+						}
+						sign = sign * tempSign
+					}
+					magnitude = funcF(temp3)
+					LRrtl[colInRow[l][m]][m] = infinityTest(sign * magnitude)
+				}
+				LRpt[t] += LRrtl[t][rowInCol[m][t]]
+				LRpt[t] = infinityTest(LRpt[t])
+			}
+		}
+	}
+
+	for i = 0; i < parameters.n; i++ {
+		if LRpt[i] >= 0 {
+			outputWord[i] = 1
+		} else {
+			outputWord[i] = 0
+		}
+	}
+
+	return hashVector, outputWord, LRrtl
+}
+
 //Decoding carry out LDPC decoding.
 //It return hashvector, outputWord, LRrtl
 func Decoding(parameters Parameters,
