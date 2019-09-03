@@ -5,7 +5,6 @@ import (
 	"io"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -117,7 +116,7 @@ func TestDecodingElapseTime(t *testing.T) {
 	hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
 	hashVector, _, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 200000; i++ {
 		_, _, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 	}
 }
@@ -142,7 +141,7 @@ func TestOptimizedDecodingElapseTime(t *testing.T) {
 	hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
 	hashVector, _, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 200000; i++ {
 		_, _, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
 	}
 }
@@ -163,8 +162,15 @@ func TestDecodingProcess(t *testing.T) {
 	var serializedHeaderWithNonce string
 	var encryptedHeaderWithNonce [32]byte
 
-	parameters := SetDifficultyUsingLevel(0)
-	parameters.seed = GenerateSeed(header.ParentHash)
+	//	parameters := SetDifficultyUsingLevel(0)
+	//	parameters.seed = GenerateSeed(header.ParentHash)
+
+	parameters := Parameters{
+		n:  24,
+		wc: 3,
+		wr: 8,
+	}
+	parameters.m = int(parameters.n * parameters.wc / parameters.wr)
 
 	H := GenerateH(parameters)
 	colInRow, rowInCol := GenerateQ(parameters, H)
@@ -177,7 +183,7 @@ func TestDecodingProcess(t *testing.T) {
 		//If Nonce is bigger than MaxNonce, then update timestamp
 		if LDPCNonce >= MaxNonce {
 			LDPCNonce = 0
-			header.Time = uint64(time.Now().Unix())
+			//header.Time = uint64(time.Now().Unix())
 			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 		}
 		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
@@ -197,6 +203,8 @@ func TestDecodingProcess(t *testing.T) {
 		}
 		LDPCNonce++
 	}
+	t.Logf("hashVector : %v", hashVector)
+	t.Logf("outputWord : %v", outputWord)
 	t.Logf("LDPC Nonce : %v", LDPCNonce)
 }
 
@@ -216,8 +224,14 @@ func TestOptimizedDecodingProcess(t *testing.T) {
 	var serializedHeaderWithNonce string
 	var encryptedHeaderWithNonce [32]byte
 
-	parameters := SetDifficultyUsingLevel(0)
-	parameters.seed = GenerateSeed(header.ParentHash)
+	//	parameters := SetDifficultyUsingLevel(0)
+	//	parameters.seed = GenerateSeed(header.ParentHash)
+	parameters := Parameters{
+		n:  24,
+		wc: 3,
+		wr: 8,
+	}
+	parameters.m = int(parameters.n * parameters.wc / parameters.wr)
 
 	H := GenerateH(parameters)
 	colInRow, rowInCol := GenerateQ(parameters, H)
@@ -230,7 +244,7 @@ func TestOptimizedDecodingProcess(t *testing.T) {
 		//If Nonce is bigger than MaxNonce, then update timestamp
 		if LDPCNonce >= MaxNonce {
 			LDPCNonce = 0
-			header.Time = uint64(time.Now().Unix())
+			//header.Time = uint64(time.Now().Unix())
 			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
 		}
 		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
@@ -250,6 +264,8 @@ func TestOptimizedDecodingProcess(t *testing.T) {
 		}
 		LDPCNonce++
 	}
+	t.Logf("hashVector : %v", hashVector)
+	t.Logf("outputWord : %v", outputWord)
 	t.Logf("LDPC Nonce : %v", LDPCNonce)
 }
 
@@ -267,41 +283,7 @@ func TestRunLDPC(t *testing.T) {
 
 func TestVerifyDecoding(t *testing.T) {
 	//parameters := SetDifficultyUsingLevel(0)
-	//Set Temporary parameters for 32 length n
 
-	/* 	Pass case (within 30s)
-	Out of range
-	parameters := Parameters {
-		n:  64,
-		wc: 1,
-		wr: 8,
-	}
-
-	parameters := Parameters{
-		n:  32,
-		wc: 2,
-		wr: 8,
-	}
-
-	parameters := Parameters{
-		n:  32,
-		wc: 3,
-		wr: 8,
-	}
-
-	parameters := Parameters{
-		n:  32,
-		wc: 4,
-		wr: 8,
-	}
-
-	It sometimes over 30 sec
-	parameters := Parameters{
-		n:  32,
-		wc: 5,
-		wr: 8,
-	}
-	*/
 	parameters := Parameters{
 		n:  32,
 		wc: 3,
@@ -315,6 +297,36 @@ func TestVerifyDecoding(t *testing.T) {
 
 	hashVector, outputWord, LDPCNonce := RunLDPC(parameters, header)
 	verificationResult, hashVectorOfVerification, outputWordOfVerification := VerifyDecoding(parameters, outputWord, LDPCNonce, header)
+
+	if !verificationResult {
+		t.Error("Wrong outputwWord")
+		t.Errorf("OutputWord of decoding     : %v", outputWord)
+		t.Errorf("OutputWord of verification : %v", outputWordOfVerification)
+		t.Errorf("HashVector of decoding     : %v", hashVector)
+		t.Errorf("HashVector of verification : %v", hashVectorOfVerification)
+	} else {
+		t.Logf("OutputWord of decoding     : %v", outputWord)
+		t.Logf("OutputWord of verification : %v", outputWordOfVerification)
+		t.Logf("HashVector of decoding     : %v", hashVector)
+		t.Logf("HashVector of verification : %v", hashVectorOfVerification)
+	}
+}
+
+func TestVerifyOptimizedDecoding(t *testing.T) {
+
+	parameters := Parameters{
+		n:  32,
+		wc: 3,
+		wr: 8,
+	}
+	parameters.m = int(parameters.n * parameters.wc / parameters.wr)
+
+	header := ethHeader{}
+	copy(header.ParentHash[:], "00000000000000000000000000000000")
+	parameters.seed = GenerateSeed(header.ParentHash)
+
+	hashVector, outputWord, LDPCNonce := RunOptimizedLDPC(parameters, header)
+	verificationResult, hashVectorOfVerification, outputWordOfVerification := VerifyOptimizedDecoding(parameters, outputWord, LDPCNonce, header)
 
 	if !verificationResult {
 		t.Error("Wrong outputwWord")

@@ -52,6 +52,47 @@ func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
 	return hashVector, outputWord, LDPCNonce
 }
 
+//RunOptimizedLDPC use OptimizedDecoding function not decoding function
+func RunOptimizedLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
+	//Need to set difficulty before running LDPC
+	var LDPCNonce uint32
+	var hashVector []int
+	var outputWord []int
+	//	var LRrtl [][]float64
+
+	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
+	var serializedHeaderWithNonce string
+	var encryptedHeaderWithNonce [32]byte
+	H := GenerateH(parameters)
+	colInRow, rowInCol := GenerateQ(parameters, H)
+
+	for {
+		//If Nonce is bigger than MaxNonce, then update timestamp
+		if LDPCNonce >= MaxNonce {
+			LDPCNonce = 0
+			header.Time = uint64(time.Now().Unix())
+			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
+		}
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
+
+		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
+		hashVector, outputWord, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
+		flag := MakeDecision(parameters, colInRow, outputWord)
+
+		if !flag {
+			hashVector, outputWord, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
+			flag = MakeDecision(parameters, colInRow, outputWord)
+		} else {
+			fmt.Printf("Codeword is founded with nonce = %d\n", LDPCNonce)
+			break
+		}
+		LDPCNonce++
+	}
+
+	return hashVector, outputWord, LDPCNonce
+}
+
 //SetDifficultyUsingLevel set matrix parameters
 //Only 4 parameters are valied 0 : Very easy, 1 : Easy, 2 : Medium, 3 : hard
 func SetDifficultyUsingLevel(level int) Parameters {
@@ -113,81 +154,25 @@ func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, h
 	return false, hashVectorOfVerification, outputWordOfVerification
 }
 
-//OptimizedDecoding is implemented decoding function is too slow
-//It is slower than unoptimized;;;
-func OptimizedDecoding(parameters Parameters,
-	hashVector []int,
-	H, rowInCol, colInRow [][]int,
-) ([]int, []int, [][]float64) {
-	var temp3, tempSign, sign, magnitude float64
+//VerifyOptimizedDecoding return bool, hashVector of verification, outputWord of verification
+func VerifyOptimizedDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, header ethHeader) (bool, []int, []int) {
+	//VerifyOptimizedDecoding function needs more concrete implementation
+	//It has to be decided
+	//It is right to generate H, colInRow, rowInCol or pass these using other ways
+	H := GenerateH(parameters)
+	colInRow, rowInCol := GenerateQ(parameters, H)
+	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
+	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+	encryptedHeaderWithNonce := sha256.Sum256([]byte(serializedHeaderWithNonce))
 
-	outputWord := make([]int, parameters.n)
-	LRqtl := make([][]float64, parameters.n)
-	LRrtl := make([][]float64, parameters.n)
-	LRft := make([]float64, parameters.n)
+	hashVector := GenerateHv(parameters, encryptedHeaderWithNonce)
+	hashVectorOfVerification, outputWordOfVerification, _ := OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
 
-	for i := 0; i < parameters.n; i++ {
-		LRqtl[i] = make([]float64, parameters.m)
-		LRrtl[i] = make([]float64, parameters.m)
-		LRft[i] = math.Log((1-crossErr)/crossErr) * float64((hashVector[i]*2 - 1))
-	}
-	LRpt := make([]float64, parameters.n)
-
-	var i, k, l, m, ind, t int
-	for ind = 1; ind <= maxIter; ind++ {
-		for t = 0; t < parameters.n; t++ {
-			LRpt[t] = infinityTest(LRft[t])
-
-			for m = 0; m < parameters.wc; m++ {
-				temp3 = 0
-				if m < parameters.wc-1 {
-					temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[parameters.wc-1][t]])
-				}
-				if m == parameters.wc-1 {
-					temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[parameters.wc-2][t]])
-				}
-				LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp3)
-
-				for l = 0; l < parameters.wr; l++ {
-					temp3 = 0.0
-					sign = 1
-					if l < parameters.wr-1 {
-						temp3 = temp3 + funcF(math.Abs(LRqtl[colInRow[parameters.wr-1][k]][k]))
-						if LRqtl[colInRow[l][k]][k] > 0.0 {
-							tempSign = 1.0
-						} else {
-							tempSign = -1.0
-						}
-						sign = sign * tempSign
-					}
-
-					if l == parameters.wr-1 {
-						temp3 = temp3 + funcF(math.Abs(LRqtl[colInRow[parameters.wr-2][k]][k]))
-						if LRqtl[colInRow[l][k]][k] > 0.0 {
-							tempSign = 1.0
-						} else {
-							tempSign = -1.0
-						}
-						sign = sign * tempSign
-					}
-					magnitude = funcF(temp3)
-					LRrtl[colInRow[l][m]][m] = infinityTest(sign * magnitude)
-				}
-				LRpt[t] += LRrtl[t][rowInCol[m][t]]
-				LRpt[t] = infinityTest(LRpt[t])
-			}
-		}
+	if reflect.DeepEqual(outputWord, outputWordOfVerification) && reflect.DeepEqual(hashVector, hashVectorOfVerification) {
+		return true, hashVectorOfVerification, outputWordOfVerification
 	}
 
-	for i = 0; i < parameters.n; i++ {
-		if LRpt[i] >= 0 {
-			outputWord[i] = 1
-		} else {
-			outputWord[i] = 0
-		}
-	}
-
-	return hashVector, outputWord, LRrtl
+	return false, hashVectorOfVerification, outputWordOfVerification
 }
 
 //Decoding carry out LDPC decoding.
@@ -237,7 +222,6 @@ func Decoding(parameters Parameters,
 						}
 						sign = sign * tempSign
 					}
-
 				}
 				magnitude = funcF(temp3)
 				LRrtl[colInRow[l][k]][k] = infinityTest(sign * magnitude)
@@ -257,6 +241,79 @@ func Decoding(parameters Parameters,
 		} else {
 			outputWord[i] = 0
 		}
+	}
+
+	return hashVector, outputWord, LRrtl
+}
+
+//OptimizedDecoding is implemented decoding function is too slow
+//But it is much slower...
+func OptimizedDecoding(parameters Parameters,
+	hashVector []int,
+	H, rowInCol, colInRow [][]int,
+) ([]int, []int, [][]float64) {
+
+	outputWord := make([]int, parameters.n)
+	LRqtl := make([][]float64, parameters.n)
+	LRrtl := make([][]float64, parameters.n)
+	LRft := make([]float64, parameters.n)
+
+	for i := 0; i < parameters.n; i++ {
+		LRqtl[i] = make([]float64, parameters.m)
+		LRrtl[i] = make([]float64, parameters.m)
+		LRft[i] = math.Log((1-crossErr)/crossErr) * float64((hashVector[i]*2 - 1))
+	}
+	LRpt := make([]float64, parameters.n)
+
+	for ind := 1; ind <= maxIter; ind++ {
+		for t := 0; t < parameters.n; t++ {
+			temp3 := 0.0
+
+			for mp := 0; mp < parameters.wc; mp++ {
+				temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[mp][t]])
+			}
+			for m := 0; m < parameters.wc; m++ {
+				temp4 := temp3
+				temp4 = infinityTest(temp4 - LRrtl[t][rowInCol[m][t]])
+				LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp4)
+			}
+		}
+
+		for k := 0; k < parameters.wr; k++ {
+			for l := 0; l < parameters.wr; l++ {
+				temp3 := 0.0
+				sign := 1.0
+				tempSign := 0.0
+				for m := 0; m < parameters.wr; m++ {
+					if m != l {
+						temp3 = temp3 + funcF(math.Abs(LRqtl[colInRow[m][k]][k]))
+						if LRqtl[colInRow[m][k]][k] > 0.0 {
+							tempSign = 1.0
+						} else {
+							tempSign = -1.0
+						}
+						sign = sign * tempSign
+					}
+				}
+				magnitude := funcF(temp3)
+				LRrtl[colInRow[l][k]][k] = infinityTest(sign * magnitude)
+			}
+		}
+
+		for t := 0; t < parameters.n; t++ {
+			LRpt[t] = infinityTest(LRft[t])
+			for k := 0; k < parameters.wc; k++ {
+				LRpt[t] += LRrtl[t][rowInCol[k][t]]
+				LRpt[t] = infinityTest(LRpt[t])
+			}
+
+			if LRpt[t] >= 0 {
+				outputWord[t] = 1
+			} else {
+				outputWord[t] = 0
+			}
+		}
+
 	}
 
 	return hashVector, outputWord, LRrtl
