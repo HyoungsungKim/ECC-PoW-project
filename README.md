@@ -37,3 +37,40 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
   - Before correcting, serialized string was passed
   - But now, encrypted(sha256) string is passed 
 
+2019.09.01
+
+- `OptimizedDecoding` function is implemented
+  - It is 20% faster than previous decoder (Different up to seed)
+
+Previous Implementation
+
+```go
+for t = 0; t < parameters.n; t++ {
+    for m = 0; m < parameters.wc; m++ {
+        temp3 = 0
+        for mp = 0; mp < parameters.wc; mp++ {
+            if mp != m {
+                temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[mp][t]])
+            }
+        }
+        LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp3)
+    }
+}
+```
+
+Optimized Implementation
+
+```go
+for t := 0; t < parameters.n; t++ {
+    temp3 := 0.0
+    for mp := 0; mp < parameters.wc; mp++ {
+        temp3 = infinityTest(temp3 + LRrtl[t][rowInCol[mp][t]])
+    }
+    for m := 0; m < parameters.wc; m++ {
+        temp4 := temp3
+        temp4 = infinityTest(temp4 - LRrtl[t][rowInCol[m][t]])
+        LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp4)
+    }
+}
+```
+
