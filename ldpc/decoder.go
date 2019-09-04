@@ -39,10 +39,7 @@ func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
 		hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
 		flag := MakeDecision(parameters, colInRow, outputWord)
 
-		if !flag {
-			hashVector, outputWord, _ = Decoding(parameters, hashVector, H, rowInCol, colInRow)
-			flag = MakeDecision(parameters, colInRow, outputWord)
-		} else {
+		if flag {
 			fmt.Printf("Codeword is founded with nonce = %d\n", LDPCNonce)
 			break
 		}
@@ -80,10 +77,7 @@ func RunOptimizedLDPC(parameters Parameters, header ethHeader) ([]int, []int, ui
 		hashVector, outputWord, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
 		flag := MakeDecision(parameters, colInRow, outputWord)
 
-		if !flag {
-			hashVector, outputWord, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
-			flag = MakeDecision(parameters, colInRow, outputWord)
-		} else {
+		if flag {
 			fmt.Printf("Codeword is founded with nonce = %d\n", LDPCNonce)
 			break
 		}
@@ -175,8 +169,7 @@ func VerifyOptimizedDecoding(parameters Parameters, outputWord []int, LDPCNonce 
 	return false, hashVectorOfVerification, outputWordOfVerification
 }
 
-//Decoding carry out LDPC decoding.
-//It return hashvector, outputWord, LRrtl
+//Decoding carry out LDPC decoding and return hashvector, outputWord, LRrtl
 func Decoding(parameters Parameters,
 	hashVector []int,
 	H, rowInCol, colInRow [][]int,
@@ -246,8 +239,7 @@ func Decoding(parameters Parameters,
 	return hashVector, outputWord, LRrtl
 }
 
-//OptimizedDecoding is implemented decoding function is too slow
-//But it is much slower...
+//OptimizedDecoding is 20% faster than previous decoding function
 func OptimizedDecoding(parameters Parameters,
 	hashVector []int,
 	H, rowInCol, colInRow [][]int,
@@ -313,7 +305,6 @@ func OptimizedDecoding(parameters Parameters,
 				outputWord[t] = 0
 			}
 		}
-
 	}
 
 	return hashVector, outputWord, LRrtl
