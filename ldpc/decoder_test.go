@@ -10,11 +10,12 @@ import (
 )
 
 func TestOptimizedDecodingImplement(t *testing.T) {
+	var nonce uint64
 	for i := 0; i < 100000; i++ {
 		header := ethHeader{}
 
 		var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
-		var serializedHeaderWithNonce = serializedHeader + ""
+		var serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(nonce, 10)
 		var encryptedHeaderWithNonce [32]byte
 
 		var hashVector []int
@@ -32,13 +33,13 @@ func TestOptimizedDecodingImplement(t *testing.T) {
 		opHeader := ethHeader{}
 
 		var opSerializedHeader = string(opHeader.ParentHash[:]) // + ... + string(header.MixDigest)
-		var opSerializedHeaderWithNonce = opSerializedHeader + ""
+		var opSerializedHeaderWithNonce = opSerializedHeader + strconv.FormatUint(nonce, 10)
 		var opEncryptedHeaderWithNonce [32]byte
 
 		var opHashVector []int
 
 		opParameters := SetDifficultyUsingLevel(0)
-		opParameters.seed = GenerateSeed(header.ParentHash)
+		opParameters.seed = GenerateSeed(opHeader.ParentHash)
 
 		opH := GenerateH(opParameters)
 		opColInRow, opRowInCol := GenerateQ(opParameters, opH)
@@ -49,12 +50,21 @@ func TestOptimizedDecodingImplement(t *testing.T) {
 		opHashVector, opOutputWord, _ := OptimizedDecoding(opParameters, opHashVector, opH, opRowInCol, opColInRow)
 
 		if !reflect.DeepEqual(hashVector, opHashVector) || !reflect.DeepEqual(outputWord, opOutputWord) {
-			t.Errorf("Decoder hashVector :  %v\n", hashVector)
-			t.Errorf("OptimezedDecoder hashVector: %v\n", opHashVector)
+			t.Errorf("Decoder hashVector		  :  %v\n", hashVector)
+			t.Errorf("OptimezedDecoder hashVector : %v\n", opHashVector)
 
-			t.Errorf("Decoder outputWord :  %v\n", outputWord)
-			t.Errorf("OptimezedDecoder outputWord: %v\n", opOutputWord)
+			t.Errorf("Decoder outputWord		  :  %v\n", outputWord)
+			t.Errorf("OptimezedDecoder outputWord : %v\n", opOutputWord)
 		}
+
+		nonce++
+		/*
+			t.Logf("Decoder hashVector			: %v\n", hashVector)
+			t.Logf("OptimezedDecoder hashVector : %v\n", opHashVector)
+
+			t.Logf("Decoder outputWord			: %v\n", outputWord)
+			t.Logf("OptimezedDecoder outputWord	: %v\n", opOutputWord)
+		*/
 	}
 }
 
