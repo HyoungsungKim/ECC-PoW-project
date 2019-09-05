@@ -1,1 +1,3 @@
-ldpc/* linguist-documentation
+Ecc-PoW-pseudo-code/* linguist-documentation=false
+LDPC-pseudo-code/* linguist-documentation=false
+ldpc/* linguist-documentation=true
