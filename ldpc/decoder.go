@@ -1,20 +1,29 @@
 package ldpc
 
 import (
+	crand "crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"math"
+	"math/big"
 	"math/rand"
 	"reflect"
 	"strconv"
-	"time"
 )
+
+//GenerateRandomNonce generate 64bit random nonce with similar way of ethereum block nonce
+func generateRandomNonce() uint64 {
+	seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+	source := rand.New(rand.NewSource(seed.Int64()))
+
+	return uint64(source.Int63())
+}
 
 //RunLDPC function needs more concrete implementation
 //return hashVector, outputWord, LDPCNonce
-func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
+func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint64) {
 	//Need to set difficulty before running LDPC
-	var LDPCNonce uint32
+	LDPCNonce := generateRandomNonce()
 	var hashVector []int
 	var outputWord []int
 	//	var LRrtl [][]float64
@@ -26,13 +35,7 @@ func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
 	colInRow, rowInCol := GenerateQ(parameters, H)
 
 	for {
-		//If Nonce is bigger than MaxNonce, then update timestamp
-		if LDPCNonce >= MaxNonce {
-			LDPCNonce = 0
-			header.Time = uint64(time.Now().Unix())
-			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-		}
-		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
@@ -50,9 +53,9 @@ func RunLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
 }
 
 //RunOptimizedLDPC use OptimizedDecoding function not decoding function
-func RunOptimizedLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint32) {
+func RunOptimizedLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint64) {
 	//Need to set difficulty before running LDPC
-	var LDPCNonce uint32
+	LDPCNonce := generateRandomNonce()
 	var hashVector []int
 	var outputWord []int
 	//	var LRrtl [][]float64
@@ -64,13 +67,7 @@ func RunOptimizedLDPC(parameters Parameters, header ethHeader) ([]int, []int, ui
 	colInRow, rowInCol := GenerateQ(parameters, H)
 
 	for {
-		//If Nonce is bigger than MaxNonce, then update timestamp
-		if LDPCNonce >= MaxNonce {
-			LDPCNonce = 0
-			header.Time = uint64(time.Now().Unix())
-			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-		}
-		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
@@ -128,14 +125,14 @@ func GenerateSeed(phv [32]byte) int {
 }
 
 //VerifyDecoding return bool, hashVector of verification, outputWord of verification
-func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, header ethHeader) (bool, []int, []int) {
+func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint64, header ethHeader) (bool, []int, []int) {
 	//VerifyDecoding function needs more concrete implementation
 	//It has to be decided
 	//It is right to generate H, colInRow, rowInCol or pass these using other ways
 	H := GenerateH(parameters)
 	colInRow, rowInCol := GenerateQ(parameters, H)
 	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
-	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 	encryptedHeaderWithNonce := sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 	hashVector := GenerateHv(parameters, encryptedHeaderWithNonce)
@@ -149,14 +146,14 @@ func VerifyDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, h
 }
 
 //VerifyOptimizedDecoding return bool, hashVector of verification, outputWord of verification
-func VerifyOptimizedDecoding(parameters Parameters, outputWord []int, LDPCNonce uint32, header ethHeader) (bool, []int, []int) {
+func VerifyOptimizedDecoding(parameters Parameters, outputWord []int, LDPCNonce uint64, header ethHeader) (bool, []int, []int) {
 	//VerifyOptimizedDecoding function needs more concrete implementation
 	//It has to be decided
 	//It is right to generate H, colInRow, rowInCol or pass these using other ways
 	H := GenerateH(parameters)
 	colInRow, rowInCol := GenerateQ(parameters, H)
 	var serializedHeader = string(header.ParentHash[:]) // + ... + string(header.MixDigest)
-	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+	serializedHeaderWithNonce := serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 	encryptedHeaderWithNonce := sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 	hashVector := GenerateHv(parameters, encryptedHeaderWithNonce)
@@ -239,7 +236,8 @@ func Decoding(parameters Parameters,
 	return hashVector, outputWord, LRrtl
 }
 
-//OptimizedDecoding is 20% faster than previous decoding function
+//OptimizedDecoding is 20% faster than previous decoding function when they use same nonce
+//percentage can be changed because of random nonce
 func OptimizedDecoding(parameters Parameters,
 	hashVector []int,
 	H, rowInCol, colInRow [][]int,

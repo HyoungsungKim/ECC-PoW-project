@@ -78,7 +78,7 @@ func TestDecodingElapseTime(t *testing.T) {
 	var hashVector []int
 	//var LRrtl [][]float64
 
-	parameters := SetDifficultyUsingLevel(1)
+	parameters := SetDifficultyUsingLevel(2)
 	parameters.seed = GenerateSeed(header.ParentHash)
 
 	H := GenerateH(parameters)
@@ -105,7 +105,7 @@ func TestOptimizedDecodingElapseTime(t *testing.T) {
 	var hashVector []int
 	//var LRrtl [][]float64
 
-	parameters := SetDifficultyUsingLevel(1)
+	parameters := SetDifficultyUsingLevel(0)
 	parameters.seed = GenerateSeed(header.ParentHash)
 
 	H := GenerateH(parameters)
@@ -124,7 +124,7 @@ func TestDecodingProcess(t *testing.T) {
 	//tickerCounter := 0
 	//ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
 
-	var LDPCNonce uint32
+	LDPCNonce := generateRandomNonce()
 	var hashVector []int
 	var outputWord []int
 	//var LRrtl [][]float64
@@ -146,13 +146,7 @@ func TestDecodingProcess(t *testing.T) {
 		//	tickerCounter++
 		//	tickerCounter %= len(ticker)
 
-		//If Nonce is bigger than MaxNonce, then update timestamp
-		if LDPCNonce >= MaxNonce {
-			LDPCNonce = 0
-			//header.Time = uint64(time.Now().Unix())
-			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-		}
-		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
@@ -184,7 +178,7 @@ func TestOptimizedDecodingProcess(t *testing.T) {
 	//tickerCounter := 0
 	//ticker := []string{"-", "-", "\\", "\\", "|", "|", "/", "/"}
 
-	var LDPCNonce uint32
+	LDPCNonce := generateRandomNonce()
 	var hashVector []int
 	var outputWord []int
 	//var LRrtl [][]float64
@@ -208,12 +202,8 @@ func TestOptimizedDecodingProcess(t *testing.T) {
 		//	tickerCounter %= len(ticker)
 
 		//If Nonce is bigger than MaxNonce, then update timestamp
-		if LDPCNonce >= MaxNonce {
-			LDPCNonce = 0
-			//header.Time = uint64(time.Now().Unix())
-			//currentBlockHeader = string(header.ParentHash[:]) + strconv.FormatUint(header.Time, 10)
-		}
-		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(uint64(LDPCNonce), 10)
+
+		serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(LDPCNonce, 10)
 		encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
 
 		hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)

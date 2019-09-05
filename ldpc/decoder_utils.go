@@ -8,7 +8,6 @@ import (
 const (
 	BigInfinity = 1000000.0
 	Inf         = 64.0
-	MaxNonce    = 1<<32 - 1
 
 	// These parameters are only used for the decoding function.
 	maxIter  = 20   // The maximum number of iteration in the decoder
@@ -21,6 +20,7 @@ const (
 	printOutputWord bool = true
 )
 
+//Parameters is used to determine matrix size
 type Parameters struct {
 	n    int
 	m    int

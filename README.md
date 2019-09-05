@@ -10,7 +10,7 @@ Github : https://github.com/hyoungsungkim
 
 Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 
-# LDPC decoder porting to go version report
+## LDPC decoder porting to Go version report
 
 2019.08.22
 
@@ -31,8 +31,8 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
   - Test LDPC Process
   - Test `RunLDPC()` function
   - Test LDPC verification
-- Implement the function for verifying LDPC decoder
-  - Correct return of few function to pass information to decoder verification function
+- Implement a function for verifying LDPC decoder
+  - Correct return of few functions to pass information to the decoder verification function
 - `GenerateHV()` function is corrected
   - Before correcting, serialized string was passed
   - But now, encrypted(sha256) string is passed 
@@ -40,7 +40,7 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 2019.09.01
 
 - `OptimizedDecoding` function is implemented
-  - It is 20% faster than previous decoder (Different up to seed)
+  - When every condition is same, It is 20% faster than previous decoder (Different up to seed)
 
 Previous Implementation
 
@@ -72,5 +72,49 @@ for t := 0; t < parameters.n; t++ {
         LRqtl[t][rowInCol[m][t]] = infinityTest(LRft[t] + temp4)
     }
 }
+```
+
+2019.09.05
+
+- Now LDPCNonce is started from Random number, not 0
+  - It is same way with go-ethereum
+  - `crand` is `crypto/rand`
+- Previous LDPCNonce is uint32, however now LDPCNonce is uint64
+
+go-ethereum
+
+```go
+// go-ethereum/consensus/ethash/sealer.go
+func (ethash *Ethash) Seal(chain consensus.ChainReader, block *types.Block, result chan<- *types.Block, stop <- chan struct{}) error {
+    .
+    .
+    if etheash.lock.Lock() {
+        seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+        .
+        .
+        ethash.rand = rand.New(rand.NewSource(seed.Int64()))
+    }
+    .
+    .
+    for i := 0; i < threads; i++ {
+        // nonce is started from random number
+        go func(id int, nonce int64) {
+            ...
+        }(i, uint64(ethash.rand.Int63()))
+    }
+}
+```
+
+LDPC Decoder
+
+```go
+// decoder.go
+func generateRandomNonce() uint64 {
+	seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+	source := rand.New(rand.NewSource(seed.Int64()))
+
+	return uint64(source.Int63())
+}
+// LDPCNonce := generateRandomNonce()
 ```
 
