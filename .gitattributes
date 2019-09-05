@@ -1,3 +1,2 @@
-* linguist-vendored
-*.cpp linguist-vendored=false
-*.h linguist-vendored=false
+Ecc-PoW-pseudo-code/* linguist-documentation=false
+LDPC-pseudo-code/* linguist-documentation=false
