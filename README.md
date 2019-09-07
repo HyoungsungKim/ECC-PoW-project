@@ -13,6 +13,10 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 
 ## LDPC decoder porting to Go version report
 
+To do
+1. Add difficulty table
+2. Implement table selecting in Makedecision function
+
 2019.08.22
 
 - Finish porting to go
