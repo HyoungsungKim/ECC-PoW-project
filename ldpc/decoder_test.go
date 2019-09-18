@@ -242,6 +242,17 @@ func TestRunLDPC(t *testing.T) {
 	RunLDPC(parameters, tempHeader)
 }
 
+func TestRunOptimizedConcurrencyLDPC(t *testing.T) {
+	parameters := SetDifficultyUsingLevel(1)
+	var tempParentHash [32]byte
+	//tempParentHash = [0, 0, ..., 0]
+	parameters.seed = GenerateSeed(tempParentHash)
+
+	tempHeader := ethHeader{}
+
+	RunOptimizedConcurrencyLDPC(parameters, tempHeader)
+}
+
 func TestVerifyDecoding(t *testing.T) {
 	//parameters := SetDifficultyUsingLevel(0)
 
