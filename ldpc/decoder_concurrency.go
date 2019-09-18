@@ -11,6 +11,8 @@ import (
 //RunOptimizedConcurrencyLDPC use goroutine for mining block
 func RunOptimizedConcurrencyLDPC(parameters Parameters, header ethHeader) ([]int, []int, uint64) {
 	//Need to set difficulty before running LDPC
+	// Number of goroutines : 500, Number of attempts : 50000 Not bad
+
 	var LDPCNonce uint64
 	var hashVector []int
 	var outputWord []int

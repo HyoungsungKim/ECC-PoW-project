@@ -242,6 +242,17 @@ func TestRunLDPC(t *testing.T) {
 	RunLDPC(parameters, tempHeader)
 }
 
+func TestRunOptimizedLDPC(t *testing.T) {
+	parameters := SetDifficultyUsingLevel(1)
+	var tempParentHash [32]byte
+	//tempParentHash = [0, 0, ..., 0]
+	parameters.seed = GenerateSeed(tempParentHash)
+
+	tempHeader := ethHeader{}
+
+	RunOptimizedLDPC(parameters, tempHeader)
+}
+
 func TestRunOptimizedConcurrencyLDPC(t *testing.T) {
 	parameters := SetDifficultyUsingLevel(1)
 	var tempParentHash [32]byte
@@ -298,6 +309,36 @@ func TestVerifyOptimizedDecoding(t *testing.T) {
 	parameters.seed = GenerateSeed(header.ParentHash)
 
 	hashVector, outputWord, LDPCNonce := RunOptimizedLDPC(parameters, header)
+	verificationResult, hashVectorOfVerification, outputWordOfVerification := VerifyOptimizedDecoding(parameters, outputWord, LDPCNonce, header)
+
+	if !verificationResult {
+		t.Error("Wrong outputwWord")
+		t.Errorf("OutputWord of decoding     : %v", outputWord)
+		t.Errorf("OutputWord of verification : %v", outputWordOfVerification)
+		t.Errorf("HashVector of decoding     : %v", hashVector)
+		t.Errorf("HashVector of verification : %v", hashVectorOfVerification)
+	} else {
+		t.Logf("OutputWord of decoding     : %v", outputWord)
+		t.Logf("OutputWord of verification : %v", outputWordOfVerification)
+		t.Logf("HashVector of decoding     : %v", hashVector)
+		t.Logf("HashVector of verification : %v", hashVectorOfVerification)
+	}
+}
+
+func TestVerifyConcurrencyDecoding(t *testing.T) {
+
+	parameters := Parameters{
+		n:  32,
+		wc: 3,
+		wr: 8,
+	}
+	parameters.m = int(parameters.n * parameters.wc / parameters.wr)
+
+	header := ethHeader{}
+	copy(header.ParentHash[:], "00000000000000000000000000000000")
+	parameters.seed = GenerateSeed(header.ParentHash)
+
+	hashVector, outputWord, LDPCNonce := RunOptimizedConcurrencyLDPC(parameters, header)
 	verificationResult, hashVectorOfVerification, outputWordOfVerification := VerifyOptimizedDecoding(parameters, outputWord, LDPCNonce, header)
 
 	if !verificationResult {
