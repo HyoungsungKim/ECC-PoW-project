@@ -254,7 +254,7 @@ func TestRunOptimizedLDPC(t *testing.T) {
 }
 
 func TestRunOptimizedConcurrencyLDPC(t *testing.T) {
-	parameters := SetDifficultyUsingLevel(1)
+	parameters := SetDifficultyUsingLevel(0)
 	var tempParentHash [32]byte
 	//tempParentHash = [0, 0, ..., 0]
 	parameters.seed = GenerateSeed(tempParentHash)
