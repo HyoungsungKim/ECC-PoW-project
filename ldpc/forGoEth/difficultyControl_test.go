@@ -27,7 +27,7 @@ func TestConversionFunc(t *testing.T) {
 		miningProb := DifficultyToProb(difficulty)
 
 		// Consider only integer part.
-		fmt.Printf("Difficulty : %v \t MiningProb : %v\t, probability compare : %v \n", math.Log2(difficulty), miningProb, math.Abs(miningProb-Table[i].miningProb) < 1)
+		fmt.Printf("Difficulty : %v \t MiningProb : %v\t, probability compare : %v \n", difficulty, miningProb, math.Abs(miningProb-Table[i].miningProb) < 1)
 	}
 }
 
@@ -36,27 +36,20 @@ func TestDifficultyChange(t *testing.T) {
 	currentBlock := ethHeader{}
 	// Parent block's timestamp is 0
 	// compare elapse time(timestamp) and parent block's timestamp(0)
+	currentBlock.Difficulty = ProbToDifficulty(Table[currentLevel].miningProb)
 
 	for i := 0; i < 7; i++ {
-		currentBlock.Difficulty = ProbToDifficulty(Table[currentLevel].miningProb)
 		fmt.Printf("Current Difficulty : %v\n", currentBlock.Difficulty)
 
 		startTime := time.Now()
 
-		parameters := Parameters{
-			n:  Table[currentLevel].n,
-			wc: Table[currentLevel].wc,
-			wr: Table[currentLevel].wr,
-		}
-		parameters.m = int(parameters.n * parameters.wc / parameters.wr)
-		parameters.seed = GenerateSeed(currentBlock.ParentHash)
-
-		RunOptimizedConcurrencyLDPC(parameters, currentBlock)
+		RunOptimizedConcurrencyLDPC(currentBlock)
 		timeStamp := uint64(time.Since(startTime).Seconds())
 		fmt.Printf("Block generation time : %v\n", timeStamp)
 
 		difficultyCalculator := MakeLDPCDifficultyCalculator()
 		nextDifficulty := difficultyCalculator(timeStamp, &currentBlock)
+		currentBlock.Difficulty = nextDifficulty
 		nextLevel := SearchLevel(nextDifficulty)
 
 		fmt.Printf("Current prob : %v, Next Level : %v,  Next difficulty : %v, Next difficulty from table : %v\n\n", Table[currentLevel].miningProb, Table[nextLevel].level, nextDifficulty, ProbToDifficulty(Table[nextLevel].miningProb))

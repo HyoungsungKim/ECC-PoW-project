@@ -227,3 +227,5 @@ func RunOptimizedConcurrencyLDPC(...) {
 - Every attempt use different LDPCNonce which is generated randomly
   - Heuristically it is faster(Need more test)
 
+### 2019.09.20 Difficulty change is implemented
+
