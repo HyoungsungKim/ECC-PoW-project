@@ -272,3 +272,9 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 - LDPC decoder is ported in go-ethereum
 - Need test for parameter tuning
+
+### 2019.09.24 Implement decoding performance test function
+
+- Test 1,000,000
+  - Single goroutine : 126.385s
+  - Multi goroutine : 24.595s

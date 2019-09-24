@@ -4,10 +4,97 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
+	"runtime"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
+
+func TestConcurrencyPerformance(t *testing.T) {
+	header := ethHeader{}
+	parameters := SetDifficultyUsingLevel(0)
+
+	var wg sync.WaitGroup
+	var outerLoopSignal = make(chan struct{})
+	var innerLoopSignal = make(chan struct{})
+	var goRoutineSignal = make(chan struct{})
+
+	attemptCount := 0
+
+outerLoop:
+	for {
+		select {
+		// If outerLoopSignal channel is closed, then break outerLoop
+		case <-outerLoopSignal:
+			break outerLoop
+
+		default:
+			// Defined default to unblock select statement
+		}
+
+	innerLoop:
+		for i := 0; i < runtime.NumCPU(); i++ {
+			select {
+			// If innerLoop signal is closed, then break innerLoop and close outerLoopSignal
+			case <-innerLoopSignal:
+				close(outerLoopSignal)
+				break innerLoop
+
+			default:
+				// Defined default to unblock select statement
+			}
+
+			wg.Add(1)
+			go func(goRoutineSignal chan struct{}) {
+				defer wg.Done()
+				//goRoutineNonce := generateRandomNonce()
+				//fmt.Printf("Initial goroutine Nonce : %v\n", goRoutineNonce)
+
+				var goRoutineHashVector []int
+
+				var serializedHeader = string(header.ParentHash[:])
+				var serializedHeaderWithNonce string
+				var encryptedHeaderWithNonce [32]byte
+				H := GenerateH(parameters)
+				colInRow, rowInCol := GenerateQ(parameters, H)
+
+				select {
+				case <-goRoutineSignal:
+					break
+
+				default:
+				attemptLoop:
+					for attempt := 0; attempt < 5000; attempt++ {
+						attemptCount++
+						goRoutineNonce := generateRandomNonce()
+						serializedHeaderWithNonce = serializedHeader + strconv.FormatUint(goRoutineNonce, 10)
+						encryptedHeaderWithNonce = sha256.Sum256([]byte(serializedHeaderWithNonce))
+
+						goRoutineHashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
+						goRoutineHashVector, _, _ = OptimizedDecoding(parameters, goRoutineHashVector, H, rowInCol, colInRow)
+
+						select {
+						case <-goRoutineSignal:
+							// fmt.Println("goRoutineSignal channel is already closed")
+							break attemptLoop
+						default:
+							if attemptCount == 1000000 {
+								close(goRoutineSignal)
+								close(innerLoopSignal)
+								fmt.Printf("Codeword is founded with nonce = %d\n", goRoutineNonce)
+								break attemptLoop
+							}
+						}
+						//goRoutineNonce++
+					}
+				}
+			}(goRoutineSignal)
+		}
+		// Need to wait to prevent memory leak
+		wg.Wait()
+	}
+}
 
 func TestOptimizedDecodingImplement(t *testing.T) {
 	var nonce uint64
@@ -114,7 +201,7 @@ func TestOptimizedDecodingElapseTime(t *testing.T) {
 
 	hashVector = GenerateHv(parameters, encryptedHeaderWithNonce)
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 1000000; i++ {
 		_, _, _ = OptimizedDecoding(parameters, hashVector, H, rowInCol, colInRow)
 	}
 }

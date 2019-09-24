@@ -27,7 +27,7 @@ func TestConversionFunc(t *testing.T) {
 		miningProb := DifficultyToProb(difficulty)
 
 		// Consider only integer part.
-		fmt.Printf("Difficulty : %v \t MiningProb : %v\t, probability compare : %v \n", math.Log2(difficulty), miningProb, math.Abs(miningProb-Table[i].miningProb) < 1)
+		fmt.Printf("Difficulty : %v \t MiningProb : %v\t, probability compare : %v \n", difficulty, miningProb, math.Abs(miningProb-Table[i].miningProb) < 1)
 	}
 }
 
