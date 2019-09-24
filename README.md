@@ -19,13 +19,13 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 
 ### 2019.08.28 Remove global variables
 
-- Index errors are happened when LDPC is tested in go-ethereum using go routine
+- Index errors are happened when LDPC is tested with go routine in go-ethereum
   - Remove global variables
   - Because of global variables, Critical section is violated
 - Remove useless return
 - Add comments to each function
 
-### 2019.08.29 Add test file
+### 2019.08.29 Add test files
 
 - Add `decoder_test.go`
   - Calculate elapse time of decoding
@@ -33,7 +33,7 @@ Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
   - Test `RunLDPC()` function
   - Test LDPC verification
 - Implement a function for verifying LDPC decoder
-  - Correct return of few functions to pass information to the decoder verification function
+  - Amend return of few functions for decoder verification function
 - `GenerateHV()` function is corrected
   - Before correcting, serialized string was passed
   - But now, encrypted(sha256) string is passed 
@@ -198,7 +198,7 @@ func RunOptimizedConcurrencyLDPC(...) {
 #### Issues
 
 - What is the number of optimal goroutines?
-  - Why It is important?
+  - Why is it important?
     - Because, It there are too many goroutine, Overhead is happened.
     - It takes a time in `wg.Wait()`
     - Too many goroutine is slower because of scheduling
@@ -207,11 +207,11 @@ func RunOptimizedConcurrencyLDPC(...) {
     - But it is dependent on system
     - It can be worse in different system
 - What is the number of optimal attempts?
-  - Why it is important?
+  - Why is it important?
     - Too many attempts make overhead in `wg.Wait()`
     - Too low attempts let goroutine meaningless
       - If attempts finish too early, single goroutine can be faster than multi goroutine(overhead)
-  - Attempts can be higher
+  - Attempts can be higher then current attempt
     - 1 attempt takes less than 1ms(Different up to difficulty)
 
 #### Now LDPCNonce is not incremented(in concurrency mining)
