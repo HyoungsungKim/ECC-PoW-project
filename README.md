@@ -122,7 +122,7 @@ func generateRandomNonce() uint64 {
 ### 2019.09.18  Concurrency mining is implemented, Now LDPC Nonce is not incremented
 
 - ***Now concurrency mining is possible!***
-- Now LDPCNonce is random generation number
+- Now LDPCNonce is random generation number in concurrency mining
 
 #### Basic Architecture
 
@@ -214,7 +214,7 @@ func RunOptimizedConcurrencyLDPC(...) {
   - Attempts can be higher
     - 1 attempt takes less than 1ms(Different up to difficulty)
 
-#### Now LDPCNonce is not incremented
+#### Now LDPCNonce is not incremented(in concurrency mining)
 
 - Duplicated decoding can be happen when we increase LDPCNonce
   - When the number of attempts is high and distance of random generation number is close, duplication can be happen
@@ -229,3 +229,46 @@ func RunOptimizedConcurrencyLDPC(...) {
 
 ### 2019.09.20 Difficulty change is implemented
 
+- Difficulty is reciprocal of mining success probability in ethereum
+  - `Target <= 2^256 / Difficulty`
+  - It means `Difficulty <= 2^256 / Target`
+- Therefore, we can convert probability of Table to Difficulty of Header
+
+#### Difficulty of Ethereum
+
+https://github.com/ethereum/EIPs/issues/100
+
+```
+algorithm:
+diff = (parent_diff + (parent_diff / 2048 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) / 9), -99))) + 2^(periodCount - 2)
+```
+
+Analysis
+
+- Basic concept is adding or subtracting to difficulty of parent
+- (timestamp - parent.timestamp) / 9
+  - When block generation takes [0,9) sec, difficulty is increased
+  - When block generation takes [9, 18) sec, difficulty is not changed
+  - When block generation takes over 18 sec, then difficulty is decreased
+- 2^(periodCount - 2) : For ice age
+- 2048 : I will define it as sensitivity
+  - Because when this number becomes bigger, it is robust to difficulty change(difficulty is changed little by little)
+  - When this number becomes smaller, it is weak to difficulty change(difficulty is changed immediately )
+
+#### Difficulty of LDPC decoder
+
+```
+algorithm:
+diff = (parent_diff + (parent_diff / sensitivity * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) / Block_generation_time), -99)))
+```
+
+- Everything is same but we don't use ice age and need parameter tuning(sensitivity, Block_generation_time)
+
+[source code](https://github.com/HyoungsungKim/ECC-PoW-project/blob/master/ldpc/difficultyControl.go)
+
+### 2019.09.23 Porting to go-ethereum
+
+https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/eccpow
+
+- LDPC decoder is ported in go-ethereum
+- Need test for parameter tuning

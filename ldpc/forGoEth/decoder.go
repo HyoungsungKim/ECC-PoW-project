@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-//GenerateRandomNonce generate 64bit random nonce with similar way of ethereum block nonce
+//generateRandomNonce generate 64bit random nonce with similar way of ethereum block nonce
 func generateRandomNonce() uint64 {
 	seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
 	source := rand.New(rand.NewSource(seed.Int64()))
@@ -17,7 +17,7 @@ func generateRandomNonce() uint64 {
 	return uint64(source.Int63())
 }
 
-//GenerateSeed generate seed using previous hash vector
+//generateSeed generate seed using previous hash vector
 func generateSeed(phv [32]byte) int {
 	sum := 0
 	for i := 0; i < len(phv); i++ {
@@ -117,8 +117,8 @@ func OptimizedDecoding(block ethHeader, hashVector []int, H, rowInCol, colInRow 
 	return hashVector, outputWord, LRrtl
 }
 
-//GenerateH generate H matrix using parameters
-//GenerateH Cannot be sure rand is same with original implementation of C++
+//generateH generate H matrix using parameters
+//generateH Cannot be sure rand is same with original implementation of C++
 func generateH(parameters Parameters) [][]int {
 	var H [][]int
 	var hSeed int64
@@ -159,7 +159,7 @@ func generateH(parameters Parameters) [][]int {
 	return H
 }
 
-//GenerateQ generate colInRow and rowInCol matrix using H matrix
+//generateQ generate colInRow and rowInCol matrix using H matrix
 func generateQ(parameters Parameters, H [][]int) ([][]int, [][]int) {
 	colInRow := make([][]int, parameters.wr)
 	for i := 0; i < parameters.wr; i++ {
@@ -189,7 +189,7 @@ func generateQ(parameters Parameters, H [][]int) ([][]int, [][]int) {
 	return colInRow, rowInCol
 }
 
-//GenerateHv generate hashvector
+//generateHv generate hashvector
 //It needs to compare with origin C++ implementation Especially when sha256 function is used
 func generateHv(parameters Parameters, encryptedHeaderWithNonce [32]byte) []int {
 	hashVector := make([]int, parameters.n)
