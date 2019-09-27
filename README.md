@@ -279,3 +279,8 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 - Test 1,000,000
   - Single goroutine : 126.385s
   - Multi goroutine : 24.595s
+
+### 2019.09.27 Implement mixhash verification  
+
+- However, There is a problem in verifying codeword
+- Need to check arguments of verify function  
