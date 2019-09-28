@@ -284,3 +284,11 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 - However, There is a problem in verifying codeword
 - Need to check arguments of verify function  
+
+### 2019.09.28 Fix verifySeal and implement unit test
+
+- Thread local variable was problem (H matrix)
+- Fix it as thread share variable.
+- It can be thread share variable. Because it is not written in thread(goroutine)
+- Implement unit test for verification.
+- Currently, approximate block generation time is 100 ~ 120 sec
