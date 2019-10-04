@@ -293,5 +293,5 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 - Implement unit test for verification.
 - Currently, approximate block generation time is 100 ~ 120 sec
 
-### 2019.10.04 Start monitoring mining
+### 2019.10.04 Start mining monitoring
 [Reference](https://steemit.com/kr-dev/@modolee/puppeth-aws-private-ethereum-network-poa)
