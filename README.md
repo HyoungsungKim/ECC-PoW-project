@@ -295,3 +295,10 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.10.04 Start mining monitoring
 [Reference](https://steemit.com/kr-dev/@modolee/puppeth-aws-private-ethereum-network-poa)
+
+### 2019.10.05 Testing
+
+- Block generation time is too irregular
+  - Need more nodes...?
+
+![Testing](img/Testing.png)
