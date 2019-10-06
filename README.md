@@ -302,3 +302,9 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
   - Need more nodes...?
 
 ![Testing](img/Testing.png)
+
+### 2019.10.06 Testing 2
+
+- Add more nodes
+
+![Testing2](img/Testing2.png)
