@@ -11,6 +11,52 @@ import (
 	"time"
 )
 
+// TestDecoding function is implemented to compare with original decoder(c++ version)
+func TestDecoding(t *testing.T) {
+	var opHashVector []int
+
+	opParameters := SetDifficultyUsingLevel(0)
+
+	opH := func(parameters Parameters) [][]int {
+		var H [][]int
+		var colOrder []int
+
+		k := parameters.m / parameters.wc
+		H = make([][]int, parameters.m)
+		for i := range H {
+			H[i] = make([]int, parameters.n)
+		}
+
+		for i := 0; i < k; i++ {
+			for j := i * parameters.wr; j < (i+1)*parameters.wr; j++ {
+				H[i][j] = 1
+			}
+		}
+
+		for i := 1; i < parameters.wc; i++ {
+			colOrder = nil
+			for j := 0; j < parameters.n; j++ {
+				colOrder = append(colOrder, j)
+			}
+
+			for j := 0; j < parameters.n; j++ {
+				index := (colOrder[j]/parameters.wr + k*i)
+				H[index][j] = 1
+			}
+		}
+		return H
+	}(opParameters)
+
+	opColInRow, opRowInCol := GenerateQ(opParameters, opH)
+	opEncryptedHeaderWithNonce := sha256.Sum256([]byte("0"))
+
+	opHashVector = GenerateHv(opParameters, opEncryptedHeaderWithNonce)
+
+	opHashVector, opOutputWord, _ := OptimizedDecoding(opParameters, opHashVector, opH, opRowInCol, opColInRow)
+
+	t.Logf("OptimizedDecoder opHashVector : %v\n", opHashVector)
+	t.Logf("OptimezedDecoder outputWord	: %v\n", opOutputWord)
+}
 func TestConcurrencyPerformance(t *testing.T) {
 	header := ethHeader{}
 	parameters := SetDifficultyUsingLevel(0)
