@@ -312,3 +312,7 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 ### 2019.10.14
 
 - Fix difficulty calculation detail
+
+### 2019.10.21
+
+- Set block generation time as 60
