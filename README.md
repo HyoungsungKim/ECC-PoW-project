@@ -12,6 +12,16 @@ Github : https://github.com/hyoungsungkim
 
 Email : rktkek456@gmail.com / hyoungsung@gist.ac.kr
 
+## Concept image
+
+### Error correction code PoW
+
+![Error correction code PoW](img/eccpow.png)
+
+### Error correction code PoW with ethash
+
+![Error correction code PoW with ethash](img/eccpow-with-ethash.png)
+
 ## LDPC decoder porting to Go version report
 
 ### 2019.08.22 Finish Porting to Go
