@@ -332,3 +332,5 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 - Change architecture
 - ECCPoW -> ethash + ldpc decoder
 
+![Testing3](img/eccpow-with-ethash-test.png)
+
