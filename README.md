@@ -334,3 +334,8 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ![Testing3](img/eccpow-with-ethash-test.png)
 
+### 2020.7
+
+- Fix concurrency error for geth deployment.
+- Last concurrency mining works only in puppeth deployment.
+	- It makes network errors. so fixed.
