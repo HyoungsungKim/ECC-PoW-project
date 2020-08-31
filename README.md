@@ -139,6 +139,7 @@ func generateRandomNonce() uint64 {
 
 - Results which are derived by writing down in `default` might be same with this architecture
 - But I think It is easier to read than writing down in `default`
+- ***This go routines algorithms are fixed for mining in geth. It works only in puppeth***
 
 ```go
 func RunOptimizedConcurrencyLDPC(...) {
