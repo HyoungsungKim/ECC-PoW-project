@@ -142,15 +142,20 @@ func generateRandomNonce() uint64 {
 - However in geth, user can change the number of threads for mining.
 
 ```go
+// consensus/eccpow/algorithm.go
 func RunOptimizedConcurrencyLDPC(...) {
     // ...
+    
+    // make empty structure to close go routine
     var outerLoopSignal = make(chan struct{})
     var innerLoopSignal = make(chan struct{})
     var goRoutinerSignal = make(chan struct{})
 
     outerLoop:
+    // Repeate generating go routine until valid nounce is found
     for {
         select{
+	// If outerLoopSignal channel is closed, then break outerLoop and stop mining
         case <-OuterLoopSignal:
             break outerLoop
             
@@ -159,19 +164,24 @@ func RunOptimizedConcurrencyLDPC(...) {
         }
 
         innerLoop:
+	// Generate go routines for concurrency mining
         for i:= 0; i < numberOfGorouine; i++ {
             select {
+	    // innerLoopSignal is propagated from go routine.
+	    // If innerLoopSignal is closed, then propagate close signal by closing outerLoopSignal and break innerLoop
             case <-innerLoopSignal:
-                close(outerLoop)
+                close(outerLoopSignal)
                 break innerLoop
                 
             default:
                 // Empty default to unblock select statement
             }
 
+	    wg.Add(1)	
             go func(goRoutineSingal chan struct{})  {
+	    	defer wg.Done()
                 // ... 
-                select {
+                select {		
                 case <-goRoutineSignal:
                     break
                     
@@ -179,19 +189,33 @@ func RunOptimizedConcurrencyLDPC(...) {
                     attemptLoop:
                     for attempt := 0; attempt < numberOfAttempt; attempt++ {
                         goRoutineNonce := generateRandomNonce()
-                        // ...                    
-                        select {
-                        case <-goRotineSignal:
-                            break attemptLoop
-                        default:
-                            // decoding
-                        }
-                    }
+                        // ...                                         
+			
+			flag = MakeDecision(header, colInRow, goRoutineOutputWord)
+			select {
+			// If one of go routine found nounce, then that go routine close chanel.
+			// As a result, other go routines recognize that do not need to keep mining. So stop it.
+			case <-goRoutineSignal:
+				// fmt.Println("goRoutineSignal channel is already closed")
+				break attemptLoop
+		    	default:
+				// If valid nounce is found, then close goRoutineSignal to let other go routine stop mining
+				// also close innerLoopSignal to propagate close signal to outer loop
+				if flag {
+				    close(goRoutineSignal)
+				    close(innerLoopSignal)
+				    hashVector = goRoutineHashVector
+				    outputWord = goRoutineOutputWord
+				    LDPCNonce = goRoutineNonce
+				    digest = seed
+				    break attemptLoop
+				}		    
+			}
+		    }
                 }
-
             }(goRoutineSignale)
         }
-        // Need to wait to prevent memory leak which is casued by unfinished goroutine
+        // Need to wait to prevent memory leak
         wg.Wait()
     }
 }
@@ -235,7 +259,7 @@ func RunOptimizedConcurrencyLDPC(...) {
     - Then 5001~10000 are duplicated
   - It is very rare because range of random generation number is 0 ~ 2^64 -1
 - Every attempt use different LDPCNonce which is generated randomly
-  - Heuristically it is faster(Need more test)
+  - Empirically it is faster(Need more tests)
 
 ### 2019.09.20 Difficulty change is implemented
 
@@ -262,8 +286,8 @@ Analysis
   - When block generation takes over 18 sec, then difficulty is decreased
 - 2^(periodCount - 2) : For ice age
 - 2048 : I will define it as sensitivity
-  - Because when this number becomes bigger, it is robust to difficulty change(difficulty is changed little by little)
-  - When this number becomes smaller, it is weak to difficulty change(difficulty is changed immediately )
+  - Because when this number becomes higher, it is robust to difficulty change(difficulty is changed little by little)
+  - When this number becomes smaller, it is weak to difficulty change(difficulty is changed rapidly )
 
 #### Difficulty of LDPC decoder
 
@@ -285,7 +309,7 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.09.24 Implement decoding performance test function
 
-- Test 1,000,000
+- Test 1,000,000 try
   - Single goroutine : 126.385s
   - Multi goroutine : 24.595s
 
@@ -296,9 +320,9 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.09.28 Fix verifySeal and implement unit test
 
-- Thread local variable was problem (H matrix)
+- Thread(go routine) local variable was problem (H matrix)
 - Fix it as thread share variable.
-- It can be thread share variable. Because it is not written in thread(goroutine)
+- It can be shared with other threads. Because it is not changed in thread(goroutine)
 - Implement unit test for verification.
 - Currently, approximate block generation time is 100 ~ 120 sec
 
@@ -328,7 +352,7 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.10.24
 
-- Change architecture
+- Change architecture for certification test
 - ECCPoW -> ethash + ldpc decoder
 
 ![Testing3](img/eccpow-with-ethash-test.png)
