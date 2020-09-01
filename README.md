@@ -137,9 +137,9 @@ func generateRandomNonce() uint64 {
 
 #### Basic Architecture
 
-- Results which are derived by writing down in `default` might be same with this architecture
-- But I think It is easier to read than writing down in `default`
 - ***This go routines algorithms are fixed for mining in geth. It works only in puppeth***
+- In puppeth, user can use only 1 thread. It is inefficient in testing.(Currently ECCPoW block generation time is not fixed)
+- However in geth, user can change the number of threads for mining.
 
 ```go
 func RunOptimizedConcurrencyLDPC(...) {
@@ -191,7 +191,7 @@ func RunOptimizedConcurrencyLDPC(...) {
 
             }(goRoutineSignale)
         }
-        // Need to wait to prevent memory leak casued by unfinished goroutine
+        // Need to wait to prevent memory leak which is casued by unfinished goroutine
         wg.Wait()
     }
 }
@@ -203,7 +203,7 @@ func RunOptimizedConcurrencyLDPC(...) {
   - In the lowest difficulty, it takes more than 600s
   - Usually more than 200s
 - After concurrency mining
-  - Tested 21 times, Only 1 test over 600s
+  - Tested 21 times, Only 1 test took more than 600s
   - Minimum is 9s,
   - Results(sec) : 9, 10, 17, 24, 30, 33, 40, 42, 45, 60, 60, 116, 143, 160 169, 210, 214, 214, 218, 220,  more than 600
 
@@ -211,20 +211,18 @@ func RunOptimizedConcurrencyLDPC(...) {
 
 - What is the number of optimal goroutines?
   - Why is it important?
-    - Because, It there are too many goroutine, Overhead is happened.
+    - Because, if there are too many goroutine, Overhead is happened.
     - It takes a time in `wg.Wait()`
     - Too many goroutine is slower because of scheduling
   - How about using constant?
     - We can get a better result if we use a constant which is derived by test
-    - But it is dependent on system
+    - But it depends on system
     - It can be worse in different system
 - What is the number of optimal attempts?
   - Why is it important?
     - Too many attempts make overhead in `wg.Wait()`
     - Too low attempts let goroutine meaningless
       - If attempts finish too early, single goroutine can be faster than multi goroutine(overhead)
-  - Attempts can be higher then current attempt
-    - 1 attempt takes less than 1ms(Different up to difficulty)
 
 #### Now LDPCNonce is not incremented(in concurrency mining)
 
