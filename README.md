@@ -266,6 +266,8 @@ func RunOptimizedConcurrencyLDPC(...) {
 - Difficulty is reciprocal of mining success probability in ethereum
   - `Target <= 2^256 / Difficulty`
   - It means `Difficulty <= 2^256 / Target`
+  - Difficulty : 블록 생성에 필요한 시도 횟수의 상한(Upper bound of the number of try to generate block)
+  - Difficulty / Block generation time : Hashrate
 - Therefore, we can convert probability of Table to Difficulty of Header
 
 #### Difficulty of Ethereum
