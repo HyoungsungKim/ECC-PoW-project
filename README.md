@@ -4,7 +4,7 @@
 - [***ECC-PoW-pseudo-blockchain***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/LDPC-pseudo-code) : Implement pseudo ECCPoW blockchain using python.
   - Blockchain source code is based on https://github.com/dvf/blockchain
 - [***ldpc***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/ldpc) : Porting LDPC C++ to LDPC golang  
-- [***ECC-PoW go-ethereum***](https://github.com/cryptoecc/ETH-ECC/tree/master/consensus/eccpow)  
+- [***ECC-PoW go-ethereum***](https://github.com/cryptoecc/ETH-ECC/tree/master/consensus/eccpow) (Organizations repository)
 
 Writer : HyoungSung Kim 
 
