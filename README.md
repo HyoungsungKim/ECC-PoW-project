@@ -290,6 +290,7 @@ Analysis
 - 2048 : I will define it as sensitivity
   - Because when this number becomes higher, it is robust to difficulty change(difficulty is changed little by little)
   - When this number becomes smaller, it is weak to difficulty change(difficulty is changed rapidly )
+  - On-line방식으로 수정 됨
 
 #### Difficulty of LDPC decoder
 
