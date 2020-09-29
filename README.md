@@ -4,7 +4,7 @@
 - [***ECC-PoW-pseudo-blockchain***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/LDPC-pseudo-code) : Implement pseudo ECCPoW blockchain using python.
   - Blockchain source code is based on https://github.com/dvf/blockchain
 - [***ldpc***](https://github.com/HyoungsungKim/ECC-PoW-project/tree/master/ldpc) : Porting LDPC C++ to LDPC golang  
-- [***ECC-PoW go-ethereum***](https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/eccpow)  
+- [***ECC-PoW go-ethereum***](https://github.com/cryptoecc/ETH-ECC/tree/master/consensus/eccpow) (Organization repository)
 
 Writer : HyoungSung Kim 
 
@@ -137,19 +137,25 @@ func generateRandomNonce() uint64 {
 
 #### Basic Architecture
 
-- Results which are derived by writing down in `default` might be same with this architecture
-- But I think It is easier to read than writing down in `default`
+- ***This go routines algorithms are fixed for mining in geth. It works only in puppeth***
+- In puppeth, user can use only 1 thread. It is inefficient in testing.(Currently ECCPoW block generation time is not fixed)
+- However in geth, user can change the number of threads for mining.
 
 ```go
+// consensus/eccpow/algorithm.go
 func RunOptimizedConcurrencyLDPC(...) {
     // ...
+    
+    // make empty structure to close go routine
     var outerLoopSignal = make(chan struct{})
     var innerLoopSignal = make(chan struct{})
     var goRoutinerSignal = make(chan struct{})
 
     outerLoop:
+    // Repeate generating go routine until valid nounce is found
     for {
         select{
+	// If outerLoopSignal channel is closed, then break outerLoop and stop mining
         case <-OuterLoopSignal:
             break outerLoop
             
@@ -158,19 +164,24 @@ func RunOptimizedConcurrencyLDPC(...) {
         }
 
         innerLoop:
+	// Generate go routines for concurrency mining
         for i:= 0; i < numberOfGorouine; i++ {
             select {
+	    // innerLoopSignal is propagated from go routine.
+	    // If innerLoopSignal is closed, then propagate close signal by closing outerLoopSignal and break innerLoop
             case <-innerLoopSignal:
-                close(outerLoop)
+                close(outerLoopSignal)
                 break innerLoop
                 
             default:
                 // Empty default to unblock select statement
             }
 
+	    wg.Add(1)	
             go func(goRoutineSingal chan struct{})  {
+	    	defer wg.Done()
                 // ... 
-                select {
+                select {		
                 case <-goRoutineSignal:
                     break
                     
@@ -178,19 +189,33 @@ func RunOptimizedConcurrencyLDPC(...) {
                     attemptLoop:
                     for attempt := 0; attempt < numberOfAttempt; attempt++ {
                         goRoutineNonce := generateRandomNonce()
-                        // ...                    
-                        select {
-                        case <-goRotineSignal:
-                            break attemptLoop
-                        default:
-                            // decoding
-                        }
-                    }
+                        // ...                                         
+			
+			flag = MakeDecision(header, colInRow, goRoutineOutputWord)
+			select {
+			// If one of go routine found nounce, then that go routine close chanel.
+			// As a result, other go routines recognize that do not need to keep mining. So stop it.
+			case <-goRoutineSignal:
+				// fmt.Println("goRoutineSignal channel is already closed")
+				break attemptLoop
+		    	default:
+				// If valid nounce is found, then close goRoutineSignal to let other go routine stop mining
+				// also close innerLoopSignal to propagate close signal to outer loop
+				if flag {
+				    close(goRoutineSignal)
+				    close(innerLoopSignal)
+				    hashVector = goRoutineHashVector
+				    outputWord = goRoutineOutputWord
+				    LDPCNonce = goRoutineNonce
+				    digest = seed
+				    break attemptLoop
+				}		    
+			}
+		    }
                 }
-
             }(goRoutineSignale)
         }
-        // Need to wait to prevent memory leak casued by unfinished goroutine
+        // Need to wait to prevent memory leak
         wg.Wait()
     }
 }
@@ -202,7 +227,7 @@ func RunOptimizedConcurrencyLDPC(...) {
   - In the lowest difficulty, it takes more than 600s
   - Usually more than 200s
 - After concurrency mining
-  - Tested 21 times, Only 1 test over 600s
+  - Tested 21 times, Only 1 test took more than 600s
   - Minimum is 9s,
   - Results(sec) : 9, 10, 17, 24, 30, 33, 40, 42, 45, 60, 60, 116, 143, 160 169, 210, 214, 214, 218, 220,  more than 600
 
@@ -210,20 +235,18 @@ func RunOptimizedConcurrencyLDPC(...) {
 
 - What is the number of optimal goroutines?
   - Why is it important?
-    - Because, It there are too many goroutine, Overhead is happened.
+    - Because, if there are too many goroutine, Overhead is happened.
     - It takes a time in `wg.Wait()`
     - Too many goroutine is slower because of scheduling
   - How about using constant?
     - We can get a better result if we use a constant which is derived by test
-    - But it is dependent on system
+    - But it depends on system
     - It can be worse in different system
 - What is the number of optimal attempts?
   - Why is it important?
     - Too many attempts make overhead in `wg.Wait()`
     - Too low attempts let goroutine meaningless
       - If attempts finish too early, single goroutine can be faster than multi goroutine(overhead)
-  - Attempts can be higher then current attempt
-    - 1 attempt takes less than 1ms(Different up to difficulty)
 
 #### Now LDPCNonce is not incremented(in concurrency mining)
 
@@ -236,13 +259,15 @@ func RunOptimizedConcurrencyLDPC(...) {
     - Then 5001~10000 are duplicated
   - It is very rare because range of random generation number is 0 ~ 2^64 -1
 - Every attempt use different LDPCNonce which is generated randomly
-  - Heuristically it is faster(Need more test)
+  - Empirically it is faster(Need more tests)
 
 ### 2019.09.20 Difficulty change is implemented
 
 - Difficulty is reciprocal of mining success probability in ethereum
   - `Target <= 2^256 / Difficulty`
   - It means `Difficulty <= 2^256 / Target`
+  - Difficulty : 블록 생성에 필요한 시도 횟수의 상한(Upper bound of the number of try to generate block)
+  - Difficulty / Block generation time : Hashrate
 - Therefore, we can convert probability of Table to Difficulty of Header
 
 #### Difficulty of Ethereum
@@ -263,8 +288,9 @@ Analysis
   - When block generation takes over 18 sec, then difficulty is decreased
 - 2^(periodCount - 2) : For ice age
 - 2048 : I will define it as sensitivity
-  - Because when this number becomes bigger, it is robust to difficulty change(difficulty is changed little by little)
-  - When this number becomes smaller, it is weak to difficulty change(difficulty is changed immediately )
+  - Because when this number becomes higher, it is robust to difficulty change(difficulty is changed little by little)
+  - When this number becomes smaller, it is weak to difficulty change(difficulty is changed rapidly )
+  - On-line방식으로 수정 됨
 
 #### Difficulty of LDPC decoder
 
@@ -286,7 +312,7 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.09.24 Implement decoding performance test function
 
-- Test 1,000,000
+- Test 1,000,000 try
   - Single goroutine : 126.385s
   - Multi goroutine : 24.595s
 
@@ -297,9 +323,9 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.09.28 Fix verifySeal and implement unit test
 
-- Thread local variable was problem (H matrix)
+- Thread(go routine) local variable was problem (H matrix)
 - Fix it as thread share variable.
-- It can be thread share variable. Because it is not written in thread(goroutine)
+- It can be shared with other threads. Because it is not changed in thread(goroutine)
 - Implement unit test for verification.
 - Currently, approximate block generation time is 100 ~ 120 sec
 
@@ -329,8 +355,13 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 ### 2019.10.24
 
-- Change architecture
+- Change architecture for certification test
 - ECCPoW -> ethash + ldpc decoder
 
 ![Testing3](img/eccpow-with-ethash-test.png)
 
+### 2020.7
+
+- Fix concurrency error for geth deployment.
+- Last concurrency mining works only in puppeth deployment.
+	- It makes network errors. so fixed.
