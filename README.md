@@ -86,6 +86,8 @@ for t := 0; t < parameters.n; t++ {
 }
 ```
 
+- `if mp != m` is same with add every thing and subtract specific value 
+
 ### 2019.09.05 LDPCNonce generating way is changed
 
 - Now LDPCNonce is started from Random number, not 0
