@@ -338,12 +338,14 @@ https://github.com/HyoungsungKim/go-ethereum/tree/fix-ldpc-eccpow-1.9/consensus/
 
 - Block generation time is too irregular
   - Need more nodes...?
+  - Image is temparaily deleted for journal paper publication
 
 ![Testing](img/Testing.png)
 
 ### 2019.10.06 Testing 2
 
 - Add more nodes
+- Image is temparaily deleted for journal paper publication
 
 ![Testing2](img/Testing2.png)
 
